@@ -31,10 +31,26 @@ main {
 
 .groove {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row {
+  display: flex;
   gap: 4px;
 }
 
-.bar {
+.lane-name {
+  flex: 0 0 96px;
+  padding: 0 6px;
+  font-size: 13px;
+  line-height: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.bar,
+.cells {
   flex-basis: 0;
   min-width: 0;
   background: var(--panel);
@@ -59,4 +75,23 @@ main {
 
 .slot.segment-start {
   opacity: 1;
+}
+
+.cells {
+  display: flex;
+  height: 24px;
+}
+
+.cell {
+  flex-basis: 0;
+  min-width: 0;
+  border-left: 1px solid var(--line);
+  color: var(--hit);
+  font-size: 13px;
+  line-height: 24px;
+  text-align: center;
+}
+
+.cell.segment-start {
+  border-left-color: var(--text);
 }

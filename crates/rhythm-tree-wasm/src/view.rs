@@ -1,6 +1,6 @@
 //! Plain data the browser receives, built by functions that run natively.
 
-use rhythm_tree::{Bar, Issue, Leaf, Level, Rat, decode};
+use rhythm_tree::{Bar, Issue, LANES, Leaf, Level, Rat, Score, decode, lane};
 use serde::Serialize;
 
 /// An issue found while opening a link.
@@ -14,6 +14,8 @@ pub struct IssueView {
 /// What opening a link gives the client.
 #[derive(Debug, Serialize)]
 pub struct Opened {
+    /// The lanes the editor shows: the whole kit, then the link's custom lanes.
+    pub lanes: Vec<String>,
     pub issues: Vec<IssueView>,
 }
 
@@ -21,6 +23,26 @@ pub struct Opened {
 #[derive(Debug, Serialize)]
 pub struct GrooveView {
     pub bars: Vec<BarView>,
+    /// The requested lanes, in the order asked for.
+    pub lanes: Vec<LaneView>,
+}
+
+/// One lane's hits.
+#[derive(Debug, Serialize, PartialEq)]
+pub struct LaneView {
+    pub id: String,
+    /// What the editor calls it.
+    pub name: String,
+    /// The letters a cell cycles through, rest first.
+    pub letters: String,
+    pub bars: Vec<LaneBarView>,
+}
+
+/// One bar of one lane.
+#[derive(Debug, Serialize, PartialEq)]
+pub struct LaneBarView {
+    /// One letter per leaf; `-` is a rest.
+    pub hits: String,
 }
 
 /// One bar.
@@ -52,8 +74,20 @@ pub struct RatView {
 
 /// Opens a link or URL.
 pub fn open_of(input: &str) -> Opened {
+    let decoded = decode(input);
+    let custom = decoded
+        .score
+        .lanes()
+        .into_iter()
+        .filter(|id| lane(id).is_none());
     Opened {
-        issues: decode(input).issues.iter().map(issue_view).collect(),
+        lanes: LANES
+            .iter()
+            .map(|lane| lane.id)
+            .chain(custom)
+            .map(String::from)
+            .collect(),
+        issues: decoded.issues.iter().map(issue_view).collect(),
     }
 }
 
@@ -69,9 +103,35 @@ fn issue_view(issue: &Issue) -> IssueView {
 }
 
 /// The groove a link holds.
-pub fn view_of(link: &str) -> GrooveView {
+pub fn view_of(link: &str, lanes: &[&str]) -> GrooveView {
+    // The link is canonical, so its issues were already listed when it was opened.
+    let score = decode(link).score;
     GrooveView {
-        bars: decode(link).score.bars().iter().map(bar_view).collect(),
+        bars: score.bars().iter().map(bar_view).collect(),
+        lanes: lanes.iter().map(|id| lane_view(&score, id)).collect(),
+    }
+}
+
+fn lane_view(score: &Score, id: &str) -> LaneView {
+    let (name, chars) = lane(id).map_or((id, "x"), |lane| (lane.name, lane.chars));
+    let bars = match score.hits(id) {
+        Some(hits) => hits
+            .iter()
+            .map(|hits| LaneBarView { hits: hits.clone() })
+            .collect(),
+        None => score
+            .bars()
+            .iter()
+            .map(|bar| LaneBarView {
+                hits: "-".repeat(bar.leaves().len()),
+            })
+            .collect(),
+    };
+    LaneView {
+        id: id.to_string(),
+        name: name.to_string(),
+        letters: format!("-{chars}"),
+        bars,
     }
 }
 
@@ -105,11 +165,37 @@ mod tests {
 
     #[test]
     fn views_bars() {
-        let view = view_of("#v=2&b=4/4:4;7/8:4,4,6");
+        let view = view_of("#v=2&b=4/4:4;7/8:4,4,6", &[]);
         let meters: Vec<_> = view.bars.iter().map(|b| b.meter.as_str()).collect();
         let leaves: Vec<_> = view.bars.iter().map(|b| b.leaves.len()).collect();
         assert_eq!(meters, ["4/4", "7/8"]);
         assert_eq!(leaves, [16, 14]);
+    }
+
+    fn lane(id: &str, name: &str, letters: &str, hits: &str) -> LaneView {
+        LaneView {
+            id: id.to_string(),
+            name: name.to_string(),
+            letters: letters.to_string(),
+            bars: vec![LaneBarView {
+                hits: hits.to_string(),
+            }],
+        }
+    }
+
+    #[test]
+    fn views_a_custom_lane() {
+        let view = view_of("#v=2&b=4/4:4&zz9=x", &["zz9"]);
+        assert_eq!(
+            view.lanes,
+            [lane("zz9", "zz9", "-x", &format!("x{}", "-".repeat(15)))]
+        );
+    }
+
+    #[test]
+    fn views_a_lane_the_link_lacks_as_rests() {
+        let view = view_of("#v=2&b=4/4:4", &["hh"]);
+        assert_eq!(view.lanes, [lane("hh", "Hi-hat", "-xXo+", &"-".repeat(16))]);
     }
 
     #[test]

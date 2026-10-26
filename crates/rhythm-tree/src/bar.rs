@@ -191,7 +191,7 @@ impl Cursor<'_> {
 }
 
 /// A run of digits, saturating at `u32::MAX`.
-fn int(s: &str) -> Option<u32> {
+pub(crate) fn int(s: &str) -> Option<u32> {
     if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {
         return None;
     }

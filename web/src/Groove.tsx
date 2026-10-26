@@ -1,4 +1,4 @@
-import type { BarView, GrooveView, Issue, Rat } from './core/types';
+import type { BarView, GrooveView, Issue, LaneView, Rat } from './core/types';
 
 const quarters = (r: Rat) => r.num / r.den;
 
@@ -15,8 +15,14 @@ export function Groove({ view, issues }: { view: GrooveView; issues: Issue[] }) 
         </ul>
       )}
       <div className="groove">
-        {view.bars.map((bar, i) => (
-          <Bar key={i} bar={bar} />
+        <div className="row">
+          <div className="lane-name" />
+          {view.bars.map((bar, i) => (
+            <Bar key={i} bar={bar} />
+          ))}
+        </div>
+        {view.lanes.map((lane) => (
+          <Lane key={lane.id} lane={lane} bars={view.bars} />
         ))}
       </div>
     </main>
@@ -31,7 +37,7 @@ function Bar({ bar }: { bar: BarView }) {
         {bar.leaves.map((leaf, i) => (
           <div
             key={i}
-            className={i === 0 || bar.leaves[i - 1].segment !== leaf.segment ? 'slot segment-start' : 'slot'}
+            className={segmentStart(bar, i) ? 'slot segment-start' : 'slot'}
             data-slot
             style={{ flexGrow: quarters(leaf.span) }}
           />
@@ -40,3 +46,34 @@ function Bar({ bar }: { bar: BarView }) {
     </div>
   );
 }
+
+function Lane({ lane, bars }: { lane: LaneView; bars: BarView[] }) {
+  return (
+    <div className="row" data-lane>
+      <div className="lane-name">{lane.name}</div>
+      {bars.map((bar, b) => {
+        const hits = Array.from(lane.bars[b].hits);
+        return (
+          <div key={b} className="cells" style={{ flexGrow: quarters(bar.length) }}>
+            {bar.leaves.map((leaf, i) => {
+              const letter = hits[i];
+              return (
+                <div
+                  key={i}
+                  className={segmentStart(bar, i) ? 'cell segment-start' : 'cell'}
+                  data-cell
+                  aria-label={`${lane.name}, bar ${b + 1}, slot ${i + 1}: ${letter === '-' ? 'rest' : letter}`}
+                  style={{ flexGrow: quarters(leaf.span) }}
+                >
+                  {letter === '-' ? '' : letter}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const segmentStart = (bar: BarView, i: number) => i === 0 || bar.leaves[i - 1].segment !== bar.leaves[i].segment;

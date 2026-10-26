@@ -24,6 +24,42 @@ pub enum Issue {
     BarReplaced(ParseError),
     /// Bars past the 512th were dropped.
     TooManyBars,
+    /// A lane the kit doesn't have was kept, with any letters.
+    CustomLane {
+        /// The lane's key.
+        lane: String,
+    },
+    /// A lane has hits for more bars than the groove has; the extra bars were dropped.
+    ExtraBars {
+        /// The lane's key.
+        lane: String,
+        /// How many bars of hits the link has.
+        parts: usize,
+        /// How many bars the groove has.
+        bars: usize,
+    },
+    /// Letters a lane doesn't have were made rests.
+    BadLetters {
+        /// The lane's key.
+        lane: String,
+        /// The bar, from 0.
+        bar: usize,
+        /// The letters, in order.
+        letters: String,
+    },
+    /// A bar of a lane had more or fewer hits than the bar has slots.
+    HitCount {
+        /// The lane's key.
+        lane: String,
+        /// The bar, from 0.
+        bar: usize,
+        /// How many hits the link has.
+        hits: usize,
+        /// How many slots the bar has.
+        slots: usize,
+        /// What was done about it.
+        fit: Fit,
+    },
     /// A field the format doesn't have was ignored.
     UnknownField {
         /// The field's key.
@@ -52,8 +88,40 @@ impl fmt::Display for Issue {
             Issue::TooManyBars => {
                 write!(f, "more than {MAX_BARS} bars; kept the first {MAX_BARS}")
             }
+            Issue::CustomLane { lane } => write!(f, "custom lane '{lane}' kept as-is"),
+            Issue::ExtraBars { lane, parts, bars } => {
+                write!(f, "{lane}: hits for {parts} bars, groove has {bars}")
+            }
+            Issue::BadLetters { lane, bar, letters } => {
+                write!(f, "{lane} bar {bar}: '{letters}' not valid; made rests")
+            }
+            Issue::HitCount {
+                lane,
+                bar,
+                hits,
+                slots,
+                fit,
+            } => write!(f, "{lane} bar {bar}: {hits} hits for {slots} slots; {fit}"),
             Issue::UnknownField { key } => write!(f, "unknown field '{key}' ignored"),
         }
+    }
+}
+
+/// How a bar of hits was fitted to its slots.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Fit {
+    /// Rests were added at the end.
+    Padded,
+    /// Hits past the last slot were dropped.
+    Cut,
+}
+
+impl fmt::Display for Fit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Fit::Padded => "padded",
+            Fit::Cut => "cut",
+        })
     }
 }
 

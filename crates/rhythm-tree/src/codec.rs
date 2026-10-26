@@ -1,10 +1,11 @@
 //! The v2 link format.
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
-use crate::bar::Bar;
-use crate::issue::Issue;
-use crate::score::Score;
+use crate::bar::{Bar, MAX_LEAVES_PER_BAR, int};
+use crate::issue::{Fit, Issue};
+use crate::score::{KNOWN_KEYS, Score, is_lane_key, lane};
 
 /// What `decode` read, and the problems it worked around.
 #[derive(Clone, Debug, PartialEq)]
@@ -29,7 +30,7 @@ pub fn decode(input: &str) -> Decoded {
             Issue::NoGroove
         };
         return Decoded {
-            score: Score::new(vec![Bar::sixteenths()]),
+            score: Score::new(vec![Bar::sixteenths()], BTreeMap::new()),
             issues: vec![issue],
         };
     }
@@ -38,16 +39,18 @@ pub fn decode(input: &str) -> Decoded {
         &safe_decode(value(&params, "b").unwrap_or("4/4:4")),
         &mut issues,
     );
-    issues.extend(
-        params
-            .iter()
-            .filter(|(key, _)| !KNOWN_KEYS.contains(key))
-            .map(|(key, _)| Issue::UnknownField {
+    let mut hits = BTreeMap::new();
+    for (key, raw) in params.iter().filter(|(key, _)| !KNOWN_KEYS.contains(key)) {
+        if is_lane_key(key) {
+            hits.insert(key.to_string(), decode_lane(key, raw, &bars, &mut issues));
+        } else {
+            issues.push(Issue::UnknownField {
                 key: key.to_string(),
-            }),
-    );
+            });
+        }
+    }
     Decoded {
-        score: Score::new(bars),
+        score: Score::new(bars, hits),
         issues,
     }
 }
@@ -55,6 +58,107 @@ pub fn decode(input: &str) -> Decoded {
 /// What JavaScript's `trim`, as the reference uses, strips: Unicode White_Space but U+0085, and U+FEFF.
 fn is_js_whitespace(c: char) -> bool {
     (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}'
+}
+
+/// One lane's `;`-separated bars of hits, one string per bar.
+fn decode_lane(key: &str, raw: &str, bars: &[Bar], issues: &mut Vec<Issue>) -> Vec<String> {
+    let allowed = lane(key).map(|lane| lane.chars);
+    if allowed.is_none() {
+        issues.push(Issue::CustomLane {
+            lane: key.to_string(),
+        });
+    }
+    let raw = safe_decode(raw);
+    let parts: Vec<&str> = raw.split(';').collect();
+    if parts.len() > bars.len() {
+        issues.push(Issue::ExtraBars {
+            lane: key.to_string(),
+            parts: parts.len(),
+            bars: bars.len(),
+        });
+    }
+    let mut strs: Vec<String> = Vec::with_capacity(bars.len());
+    for (b, bar) in bars.iter().enumerate() {
+        let at = LaneBar {
+            lane: key,
+            bar: b,
+            slots: bar.leaves().len(),
+            allowed,
+        };
+        let prev = strs.last().map_or("", String::as_str);
+        let str = decode_lane_bar(&at, parts.get(b).copied().unwrap_or_default(), prev, issues);
+        strs.push(str);
+    }
+    strs
+}
+
+/// Where a bar of hits sits: its lane, its bar, how many slots it fills and the letters it may use.
+struct LaneBar<'a> {
+    lane: &'a str,
+    bar: usize,
+    slots: usize,
+    allowed: Option<&'static str>,
+}
+
+/// One bar of one lane: `.` repeats `prev`, rest runs expand, letters the lane doesn't have become
+/// rests, and the hits are fitted to the slots.
+fn decode_lane_bar(at: &LaneBar, part: &str, prev: &str, issues: &mut Vec<Issue>) -> String {
+    let mut str = if part == "." {
+        prev.to_string()
+    } else {
+        unrle(part)
+    };
+    if let Some(allowed) = at.allowed {
+        let is_letter = |c: char| c == '-' || allowed.contains(c);
+        let bad: String = str.chars().filter(|&c| !is_letter(c)).collect();
+        if !bad.is_empty() {
+            issues.push(Issue::BadLetters {
+                lane: at.lane.to_string(),
+                bar: at.bar,
+                letters: bad,
+            });
+            str = str
+                .chars()
+                .map(|c| if is_letter(c) { c } else { '-' })
+                .collect();
+        }
+    }
+    let hits = str.chars().count();
+    if hits != at.slots && !part.is_empty() {
+        issues.push(Issue::HitCount {
+            lane: at.lane.to_string(),
+            bar: at.bar,
+            hits,
+            slots: at.slots,
+            fit: if hits > at.slots {
+                Fit::Cut
+            } else {
+                Fit::Padded
+            },
+        });
+    }
+    str.chars()
+        .chain(std::iter::repeat('-'))
+        .take(at.slots)
+        .collect()
+}
+
+/// Expands each `-N` into N rests, N capped at `MAX_LEAVES_PER_BAR`.
+fn unrle(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(c) = rest.chars().next() {
+        rest = &rest[c.len_utf8()..];
+        let digits = rest.len() - rest.trim_start_matches(|d: char| d.is_ascii_digit()).len();
+        match int(&rest[..digits]) {
+            Some(n) if c == '-' => {
+                out.extend(std::iter::repeat_n('-', n.min(MAX_LEAVES_PER_BAR) as usize));
+                rest = &rest[digits..];
+            }
+            _ => out.push(c),
+        }
+    }
+    out
 }
 
 /// The `;`-separated bars, each one that can't be read replaced with 4/4 in 16ths, up to `MAX_BARS`.
@@ -78,8 +182,6 @@ fn decode_bars(raw: &str, issues: &mut Vec<Issue>) -> Vec<Bar> {
 
 /// The most bars a groove holds.
 pub(crate) const MAX_BARS: usize = 512;
-
-const KNOWN_KEYS: [&str; 2] = ["v", "b"];
 
 const GROOVE_SCRIBE_KEYS: [&str; 6] = ["timesig", "div", "h", "s", "k", "measures"];
 
@@ -296,6 +398,120 @@ mod tests {
         ] {
             assert_eq!(safe_decode(s), decoded, "{s}");
         }
+    }
+
+    fn hits(decoded: &Decoded, lane: &str) -> Vec<String> {
+        decoded.score.hits(lane).unwrap_or_default().to_vec()
+    }
+
+    fn messages(decoded: &Decoded) -> Vec<String> {
+        decoded.issues.iter().map(Issue::to_string).collect()
+    }
+
+    #[test]
+    fn reads_lane_hits() {
+        let decoded = decode("#v=2&b=4/4:4&hh=x-x-x-x-x-x-x-x-");
+        assert_eq!(hits(&decoded, "hh"), ["x-x-x-x-x-x-x-x-"]);
+        assert_eq!(messages(&decoded), [] as [String; 0]);
+    }
+
+    #[test]
+    fn expands_rest_runs() {
+        let decoded = decode("#v=2&b=4/4:4&sn=-4o-11");
+        assert_eq!(hits(&decoded, "sn"), ["----o-----------"]);
+        assert_eq!(messages(&decoded), [] as [String; 0]);
+    }
+
+    #[test]
+    fn repeats_the_previous_bar() {
+        let decoded = decode("#v=2&b=4/4:4;4/4:4&hh=x-x-x-x-x-x-x-x-;.");
+        assert_eq!(hits(&decoded, "hh"), ["x-x-x-x-x-x-x-x-"; 2]);
+        assert_eq!(messages(&decoded), [] as [String; 0]);
+    }
+
+    #[test]
+    fn turns_bad_letters_into_rests() {
+        let decoded = decode("#v=2&b=4/4:4&sn=ozz-");
+        assert_eq!(hits(&decoded, "sn"), [format!("o{}", "-".repeat(15))]);
+        assert_eq!(
+            messages(&decoded),
+            [
+                "sn bar 0: 'zz' not valid; made rests",
+                "sn bar 0: 4 hits for 16 slots; padded"
+            ]
+        );
+        assert!(decoded.issues.iter().all(|i| i.level() == Level::Warn));
+    }
+
+    #[test]
+    fn pads_and_cuts_in_field_order() {
+        let decoded = decode("#v=2&b=4/4:4&kk=o-o&sn=o---o---o---o---o---");
+        assert_eq!(hits(&decoded, "kk"), [format!("o-o{}", "-".repeat(13))]);
+        assert_eq!(hits(&decoded, "sn"), ["o---o---o---o---"]);
+        assert_eq!(
+            messages(&decoded),
+            [
+                "kk bar 0: 3 hits for 16 slots; padded",
+                "sn bar 0: 20 hits for 16 slots; cut"
+            ]
+        );
+    }
+
+    #[test]
+    fn reports_extra_bars() {
+        let decoded = decode("#v=2&b=4/4:4&hh=x;x");
+        assert_eq!(hits(&decoded, "hh"), [format!("x{}", "-".repeat(15))]);
+        assert_eq!(
+            messages(&decoded),
+            [
+                "hh: hits for 2 bars, groove has 1",
+                "hh bar 0: 1 hits for 16 slots; padded"
+            ]
+        );
+    }
+
+    #[test]
+    fn keeps_custom_lanes() {
+        let decoded = decode("#v=2&b=4/4:4&zz9=x-x");
+        assert_eq!(hits(&decoded, "zz9"), [format!("x-x{}", "-".repeat(13))]);
+        assert_eq!(
+            messages(&decoded),
+            [
+                "custom lane 'zz9' kept as-is",
+                "zz9 bar 0: 3 hits for 16 slots; padded"
+            ]
+        );
+        let decoded = decode("#v=2&b=4/4:4&zz9=x&hh=x&ab1=x");
+        assert_eq!(decoded.score.lanes(), ["hh", "ab1", "zz9"]);
+    }
+
+    #[test]
+    fn caps_rest_runs() {
+        let decoded = decode("#v=2&b=4/4:4&hh=-9999");
+        assert_eq!(hits(&decoded, "hh"), ["-".repeat(16)]);
+        assert_eq!(messages(&decoded), ["hh bar 0: 512 hits for 16 slots; cut"]);
+    }
+
+    #[test]
+    fn reads_percent_encoded_hits() {
+        let decoded = decode("#v=2&b=4/4:4;4/4:4&hh=x-15%3B.");
+        let bar = format!("x{}", "-".repeat(15));
+        assert_eq!(hits(&decoded, "hh"), [bar.clone(), bar]);
+        assert_eq!(messages(&decoded), [] as [String; 0]);
+    }
+
+    #[test]
+    fn reserved_keys_are_not_lanes() {
+        let decoded = decode("#v=2&b=4/4:4&sw=20&tc=x&ov=y");
+        assert_eq!(
+            messages(&decoded),
+            [
+                "unknown field 'sw' ignored",
+                "unknown field 'tc' ignored",
+                "unknown field 'ov' ignored"
+            ]
+        );
+        assert_eq!(decoded.score.lanes(), [] as [&str; 0]);
     }
 
     #[test]

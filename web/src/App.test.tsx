@@ -21,14 +21,26 @@ const fourFour: BarView = {
 test("opens the page's link and draws it", () => {
   const href = 'https://x.test/#v=2&b=4/4:4';
   const core: Core = {
-    openLink: vi.fn(() => ({ issues: [{ level: 'error' as const, msg: 'x; replaced with 4/4 in 16ths' }] })),
-    view: vi.fn(() => ({ bars: [fourFour] })),
+    openLink: vi.fn(() => ({ lanes: [], issues: [{ level: 'error' as const, msg: 'x; replaced with 4/4 in 16ths' }] })),
+    view: vi.fn(() => ({ bars: [fourFour], lanes: [] })),
   };
 
   const { container } = render(<App core={core} href={href} />);
 
   expect(core.openLink).toHaveBeenCalledWith(href);
-  expect(core.view).toHaveBeenCalledWith(href);
+  expect(core.view).toHaveBeenCalledWith(href, []);
   expect(screen.getByText('x; replaced with 4/4 in 16ths')).toBeTruthy();
   expect(container.querySelectorAll('[data-slot]')).toHaveLength(16);
+});
+
+test('passes the opened lanes to view', () => {
+  const href = 'https://x.test/#v=2&b=4/4:4';
+  const core: Core = {
+    openLink: vi.fn(() => ({ lanes: ['hh', 'sn'], issues: [] })),
+    view: vi.fn(() => ({ bars: [fourFour], lanes: [] })),
+  };
+
+  render(<App core={core} href={href} />);
+
+  expect(core.view).toHaveBeenCalledWith(href, ['hh', 'sn']);
 });
