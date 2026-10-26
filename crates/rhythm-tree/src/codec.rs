@@ -1,5 +1,7 @@
 //! The v2 link format.
 
+use std::borrow::Cow;
+
 use crate::bar::Bar;
 use crate::issue::Issue;
 use crate::score::Score;
@@ -32,7 +34,18 @@ pub fn decode(input: &str) -> Decoded {
         };
     }
     let mut issues = vec![];
-    let bars = decode_bars(value(&params, "b").unwrap_or("4/4:4"), &mut issues);
+    let bars = decode_bars(
+        &safe_decode(value(&params, "b").unwrap_or("4/4:4")),
+        &mut issues,
+    );
+    issues.extend(
+        params
+            .iter()
+            .filter(|(key, _)| !KNOWN_KEYS.contains(key))
+            .map(|(key, _)| Issue::UnknownField {
+                key: key.to_string(),
+            }),
+    );
     Decoded {
         score: Score::new(bars),
         issues,
@@ -44,23 +57,29 @@ fn is_js_whitespace(c: char) -> bool {
     (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}'
 }
 
-/// The `;`-separated bars, each one that can't be read replaced with 4/4 in 16ths.
+/// The `;`-separated bars, each one that can't be read replaced with 4/4 in 16ths, up to `MAX_BARS`.
 fn decode_bars(raw: &str, issues: &mut Vec<Issue>) -> Vec<Bar> {
-    let mut bars: Vec<Bar> = raw
-        .split(';')
-        .filter(|item| !item.is_empty())
-        .map(|item| {
-            Bar::parse(item).unwrap_or_else(|e| {
-                issues.push(Issue::BarReplaced(e));
-                Bar::sixteenths()
-            })
-        })
-        .collect();
+    let mut bars = vec![];
+    for item in raw.split(';').filter(|item| !item.is_empty()) {
+        if bars.len() == MAX_BARS {
+            issues.push(Issue::TooManyBars);
+            break;
+        }
+        bars.push(Bar::parse(item).unwrap_or_else(|e| {
+            issues.push(Issue::BarReplaced(e));
+            Bar::sixteenths()
+        }));
+    }
     if bars.is_empty() {
         bars.push(Bar::sixteenths());
     }
     bars
 }
+
+/// The most bars a groove holds.
+pub(crate) const MAX_BARS: usize = 512;
+
+const KNOWN_KEYS: [&str; 2] = ["v", "b"];
 
 const GROOVE_SCRIBE_KEYS: [&str; 6] = ["timesig", "div", "h", "s", "k", "measures"];
 
@@ -92,6 +111,34 @@ fn params(body: &str) -> Vec<(&str, &str)> {
     params
 }
 
+/// Percent-decodes like `decodeURIComponent`; text it can't decode comes back as it is.
+fn safe_decode(s: &str) -> Cow<'_, str> {
+    if !s.contains('%') {
+        return Cow::Borrowed(s);
+    }
+    match unescape(s.as_bytes()).map(String::from_utf8) {
+        Some(Ok(decoded)) => Cow::Owned(decoded),
+        _ => Cow::Borrowed(s),
+    }
+}
+
+/// The bytes `%XX` escapes stand for, or `None` when an escape is malformed.
+fn unescape(b: &[u8]) -> Option<Vec<u8>> {
+    let hex = |at: usize| Some(char::from(*b.get(at)?).to_digit(16)? as u8);
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' {
+            out.push(hex(i + 1)? * 16 + hex(i + 2)?);
+            i += 3;
+        } else {
+            out.push(b[i]);
+            i += 1;
+        }
+    }
+    Some(out)
+}
+
 fn value<'a>(params: &[(&'a str, &'a str)], key: &str) -> Option<&'a str> {
     params.iter().find(|(k, _)| *k == key).map(|(_, v)| *v)
 }
@@ -121,9 +168,7 @@ mod tests {
         let issues: Vec<_> = over.issues.iter().map(ToString::to_string).collect();
         assert_eq!(
             issues,
-            [
-                "'9/4:64,64,64,64,64,64,64,64,1' is not a bar (expected like 4/4:4); replaced with 4/4 in 16ths"
-            ]
+            ["513 slots in one bar is too many; replaced with 4/4 in 16ths"]
         );
     }
 
@@ -203,6 +248,54 @@ mod tests {
     #[test]
     fn keeps_what_javascript_trim_keeps() {
         assert_eq!(decode("\u{85}v=2&b=7/8:4,4,6").issues, [Issue::NoGroove]);
+    }
+
+    #[test]
+    fn reports_unknown_fields() {
+        let decoded = decode("#v=2&b=4/4:4&Weird=1");
+        assert_eq!(
+            decoded.issues,
+            [Issue::UnknownField {
+                key: "Weird".to_string()
+            }]
+        );
+        assert_eq!(
+            decoded.issues[0].to_string(),
+            "unknown field 'Weird' ignored"
+        );
+    }
+
+    #[test]
+    fn caps_the_bar_count() {
+        let decoded = decode(&format!("#v=2&b={}", "4/4:4;".repeat(513)));
+        assert_eq!(decoded.score.bars().len(), 512);
+        assert_eq!(decoded.issues, [Issue::TooManyBars]);
+        assert_eq!(
+            decoded.issues[0].to_string(),
+            "more than 512 bars; kept the first 512"
+        );
+    }
+
+    #[test]
+    fn reads_percent_encoded_bars() {
+        let decoded = decode("#v=2&b=4/4:4%3B3/4:3");
+        assert_eq!(
+            decoded.score.bars(),
+            [Bar::parse("4/4:4").unwrap(), Bar::parse("3/4:3").unwrap()]
+        );
+        assert_eq!(decoded.issues, []);
+    }
+
+    #[test]
+    fn decodes_percent_escapes_safely() {
+        for (s, decoded) in [
+            ("%E2%99%A9%3D96", "\u{2669}=96"),
+            ("100%", "100%"),
+            ("%E2%80", "%E2%80"),
+            ("a+b", "a+b"),
+        ] {
+            assert_eq!(safe_decode(s), decoded, "{s}");
+        }
     }
 
     #[test]

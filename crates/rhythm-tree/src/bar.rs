@@ -30,32 +30,54 @@ impl Bar {
         let not_a_bar = || ParseError::NotABar {
             spec: s.to_string(),
         };
-        let (meter, segs) = s.split_once(':').ok_or_else(not_a_bar)?;
+        let (meter, segs) = s
+            .split_once(':')
+            .filter(|(_, segs)| !segs.is_empty() && !segs.contains(LINE_TERMINATORS))
+            .ok_or_else(not_a_bar)?;
         let (num, den) = meter.split_once('/').ok_or_else(not_a_bar)?;
         let (num, den) = (
             int(num).ok_or_else(not_a_bar)?,
             int(den).ok_or_else(not_a_bar)?,
         );
-        if !(1..=64).contains(&num) || !DENOMINATORS.contains(&den) {
-            return Err(not_a_bar());
+        if !(1..=64).contains(&num) {
+            return Err(ParseError::NumeratorOutOfRange { num, den });
+        }
+        if !DENOMINATORS.contains(&den) {
+            return Err(ParseError::DenominatorOutOfRange { num, den });
         }
         let groups = default_groups(num, den);
-        let mut segs = segs
-            .split(',')
-            .map(|n| {
-                int(n)
-                    .filter(|n| (1..=MAX_SLOTS).contains(n))
-                    .map(|n| Node { n })
-            })
-            .collect::<Option<Vec<_>>>()
-            .ok_or_else(not_a_bar)?;
+        let mut cursor = Cursor { s: segs, at: 0 };
+        let mut segs = vec![];
+        loop {
+            let n = cursor.int()?;
+            if !(1..=MAX_SLOTS).contains(&n) {
+                return Err(ParseError::SplitOutOfRange { n });
+            }
+            segs.push(Node { n });
+            if !cursor.eat(b',') {
+                break;
+            }
+        }
+        if let Some(ch) = cursor.rest().chars().next() {
+            return Err(ParseError::UnexpectedInBar {
+                ch,
+                bar: s.to_string(),
+            });
+        }
         if let [seg] = segs.as_slice() {
             segs = vec![seg.clone(); groups.len()];
         }
-        if segs.len() != groups.len()
-            || segs.iter().map(|seg| seg.n).sum::<u32>() > MAX_LEAVES_PER_BAR
-        {
-            return Err(not_a_bar());
+        if segs.len() != groups.len() {
+            return Err(ParseError::SegmentsCover {
+                used: segs.len(),
+                num,
+                den,
+                groups: groups.len(),
+            });
+        }
+        let slots = segs.iter().map(|seg| u64::from(seg.n)).sum::<u64>();
+        if slots > u64::from(MAX_LEAVES_PER_BAR) {
+            return Err(ParseError::TooManySlots { slots });
         }
         Ok(Bar {
             num,
@@ -114,6 +136,9 @@ pub(crate) const MAX_LEAVES_PER_BAR: u32 = 512;
 
 const DENOMINATORS: [u32; 6] = [1, 2, 4, 8, 16, 32];
 
+/// The characters the reference's `.` doesn't match, so its bar pattern rejects them.
+const LINE_TERMINATORS: [char; 4] = ['\n', '\r', '\u{2028}', '\u{2029}'];
+
 /// Quarter-note meters beat by beat; others in 3s when they divide by 3, else in 2s ending in a 3
 /// (7/8 is 2+2+3).
 fn default_groups(num: u32, den: u32) -> Vec<u32> {
@@ -131,6 +156,38 @@ fn default_groups(num: u32, den: u32) -> Vec<u32> {
     }
     groups.push(rest);
     groups
+}
+
+/// A read position in link text.
+struct Cursor<'a> {
+    s: &'a str,
+    at: usize,
+}
+
+impl Cursor<'_> {
+    /// The digit run at the cursor, moving past it.
+    fn int(&mut self) -> Result<u32, ParseError> {
+        let digits = self.rest().bytes().take_while(u8::is_ascii_digit).count();
+        let n = int(&self.rest()[..digits]).ok_or_else(|| ParseError::ExpectedNumber {
+            at: self.at,
+            text: self.s.to_string(),
+        })?;
+        self.at += digits;
+        Ok(n)
+    }
+
+    /// Moves past `b` when it is next.
+    fn eat(&mut self, b: u8) -> bool {
+        let next = self.rest().as_bytes().first() == Some(&b);
+        if next {
+            self.at += 1;
+        }
+        next
+    }
+
+    fn rest(&self) -> &str {
+        &self.s[self.at..]
+    }
 }
 
 /// A run of digits, saturating at `u32::MAX`.
@@ -211,25 +268,36 @@ mod tests {
 
     #[test]
     fn rejects_malformed_bars() {
-        for s in [
-            "4/4",
-            "4/4:",
-            "0/4:4",
-            "65/4:4",
-            "4/5:4",
-            "4/4:4,4",
-            "4/4:4x",
-            "4/4:a",
-            "4/4:0",
-            "4/4:65",
-            "64/4:64",
-            "99999999999/4:4",
+        for (s, msg) in [
+            ("4/4", "'4/4' is not a bar (expected like 4/4:4)"),
+            ("4/4:", "'4/4:' is not a bar (expected like 4/4:4)"),
+            ("0/4:4", "meter 0/4: numerator out of range"),
+            ("65/4:4", "meter 65/4: numerator out of range"),
+            ("4/5:4", "meter 4/5: denominator out of range"),
+            ("4/4:4,4", "segments cover 2 beat groups; 4/4 has 4"),
+            ("4/4:4x", "unexpected 'x' in bar '4/4:4x'"),
+            ("4/4:4\n", "'4/4:4\n' is not a bar (expected like 4/4:4)"),
+            ("4/4:4\r", "'4/4:4\r' is not a bar (expected like 4/4:4)"),
+            (
+                "4/4:4\u{2028}",
+                "'4/4:4\u{2028}' is not a bar (expected like 4/4:4)",
+            ),
+            (
+                "4/4:4\u{2029}",
+                "'4/4:4\u{2029}' is not a bar (expected like 4/4:4)",
+            ),
+            ("4/4:a", "expected a number at 0 in 'a'"),
+            ("4/4:0", "a split of 0 is out of range"),
+            ("4/4:65", "a split of 65 is out of range"),
+            ("64/4:64", "4096 slots in one bar is too many"),
+            (
+                "99999999999/4:4",
+                "meter 4294967295/4: numerator out of range",
+            ),
         ] {
             assert_eq!(
-                Bar::parse(s),
-                Err(ParseError::NotABar {
-                    spec: s.to_string()
-                }),
+                Bar::parse(s).map_err(|e| e.to_string()),
+                Err(msg.to_string()),
                 "{s}"
             );
         }
