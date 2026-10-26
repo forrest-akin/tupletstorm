@@ -4,14 +4,14 @@ Tupletstorm grows in phases. Each phase ships something people can use, and each
 later phase adds one kind of distributed-systems component on top of the same
 core library.
 
-Status: **phase 0 done**. Phase 1 is next.
+Status: **phase 0 done**. Phase 1 is in progress (milestone 2).
 
 ## Phase 0: design and format references (done)
 
 - Design references (`docs/design/`) and RFD skeletons (`docs/rfd/`).
 - The format reference (`docs/reference/rhythmTree.js`) and its conformance
   fixture (`crates/rhythm-tree/tests/fixtures/conformance.json`).
-- Node pinned in `mise.toml`.
+- Node, Rust and wasm-pack pinned in `mise.toml`.
 
 ## Phase 1: local-first editor (static site)
 

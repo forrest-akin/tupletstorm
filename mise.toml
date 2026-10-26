@@ -1,2 +1,8 @@
 [tools]
 node = "22"
+"aqua:wasm-bindgen/wasm-pack" = "0.15.0"
+
+[tools.rust]
+version = "1.99.1"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]

@@ -1,0 +1,13 @@
+[package]
+name = "rhythm-tree"
+version = "0.1.0"
+description = "Rhythm trees for drum notation: exact timing and a compact link format."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dev-dependencies]
+proptest = "1"
+
+[lints]
+workspace = true

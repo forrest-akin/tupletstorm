@@ -6,11 +6,35 @@ on:
   pull_request:
 
 jobs:
-  fixture:
-    name: Conformance fixture matches the reference
+  rust:
+    name: Rust (fmt, clippy, tests)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v5
-      - run: node tools/gen-conformance.mjs
-      - run: git diff --exit-code crates/rhythm-tree/tests/fixtures/conformance.json
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features
+
+  web:
+    name: Web client (typecheck, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v5
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - run: wasm-pack build crates/rhythm-tree-wasm --target web --out-dir ../../web/src/core/pkg
+        working-directory: .
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

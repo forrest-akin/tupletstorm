@@ -36,14 +36,26 @@ an interactive tour of both.
 ## Layout
 
 ```
-docs/    milestones, RFDs, analysis, designs, the format reference
-tools/   conformance fixture generation
+crates/rhythm-tree        the shared core: rhythm-tree model, exact timing and the v2 link format
+crates/rhythm-tree-wasm   browser bindings for the core
+web/                      browser client
+docs/                     milestones, RFDs, analysis, designs, the format reference
+tools/                    conformance fixture generation
 ```
 
 ## Development
 
 Install [mise](https://mise.jdx.dev), then run `mise trust && mise install`.
-`mise.toml` pins Node 22, which runs `tools/gen-conformance.mjs`.
+`mise.toml` pins Rust (with the wasm target, rustfmt and clippy), Node 22 and
+wasm-pack.
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-features
+wasm-pack build crates/rhythm-tree-wasm --target web --out-dir ../../web/src/core/pkg
+cd web && npm ci && npm run typecheck && npm test && npm run build
+```
 
 ## Licence
 

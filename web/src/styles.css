@@ -1,0 +1,62 @@
+:root {
+  --ground: #121417;
+  --panel: #1a1d22;
+  --line: #2e333b;
+  --text: #ece9e2;
+  --hit: #f2a541;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  padding: 16px;
+}
+
+.issues {
+  margin: 0 0 16px;
+  padding: 8px 12px 8px 28px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.issues .error {
+  color: var(--hit);
+}
+
+.groove {
+  display: flex;
+  gap: 4px;
+}
+
+.bar {
+  flex-basis: 0;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.meter {
+  padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.slots {
+  display: flex;
+  height: 24px;
+}
+
+.slot {
+  flex-basis: 0;
+  border-left: 1px solid var(--line);
+  opacity: 0.5;
+}
+
+.slot.segment-start {
+  opacity: 1;
+}
