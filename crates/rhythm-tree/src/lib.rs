@@ -1,7 +1,7 @@
 //! Rhythm trees for drum notation: exact timing and a compact link format.
 //!
-//! A [`Score`] is a title, an author, comments, a tempo, swing, a list of [`Bar`]s and each lane's
-//! hits, one letter per leaf.
+//! A [`Score`] is a title, an author, comments, a tempo, swing, a list of [`Bar`]s, tempo changes
+//! and each lane's hits, one letter per leaf.
 //! A bar is a meter, a beat grouping and segments, each an equal split over one or more groups;
 //! [`Bar::leaves`] walks its slots in time order, with onsets as exact [`Rat`]s in quarter notes.
 //! [`LANES`] is the kit.
@@ -33,6 +33,6 @@ mod score;
 
 pub use bar::{Bar, Leaf};
 pub use codec::{Decoded, decode, encode};
-pub use issue::{EditError, Fit, Issue, Level, ParseError};
+pub use issue::{EditError, Fit, Issue, Level, ParseError, TempoChangeError};
 pub use rat::Rat;
 pub use score::{LANES, Lane, Score, lane, letters};

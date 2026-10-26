@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use crate::bar::{Bar, MAX_LEAVES_PER_BAR};
 use crate::issue::{Fit, Issue};
 use crate::node::int;
-use crate::score::{KNOWN_KEYS, Score, is_lane_key, lane};
+use crate::score::{KNOWN_KEYS, Score, TempoChange, is_lane_key, lane};
 
 /// What `decode` read, and the problems it worked around.
 #[derive(Clone, Debug, PartialEq)]
@@ -38,6 +38,7 @@ pub fn decode(input: &str) -> Decoded {
                 DEFAULT_TEMPO,
                 0.0,
                 vec![Bar::sixteenths()],
+                vec![],
                 BTreeMap::new(),
             ),
             issues: vec![issue],
@@ -52,6 +53,7 @@ pub fn decode(input: &str) -> Decoded {
         &safe_decode(value(&params, "b").unwrap_or("4/4:4")),
         &mut issues,
     );
+    let tempo_changes = decode_tempo_changes(value(&params, "tc"), bars.len(), &mut issues);
     let mut hits = BTreeMap::new();
     for (key, raw) in params.iter().filter(|(key, _)| !KNOWN_KEYS.contains(key)) {
         if is_lane_key(key) {
@@ -63,7 +65,16 @@ pub fn decode(input: &str) -> Decoded {
         }
     }
     Decoded {
-        score: Score::new(title, author, comments, tempo, swing, bars, hits),
+        score: Score::new(
+            title,
+            author,
+            comments,
+            tempo,
+            swing,
+            bars,
+            tempo_changes,
+            hits,
+        ),
         issues,
     }
 }
@@ -90,6 +101,14 @@ pub fn encode(score: &Score) -> String {
         fields.push(format!("sw={}", score.swing()));
     }
     fields.push(format!("b={}", encode_bars(score.bars())));
+    if !score.tempo_changes().is_empty() {
+        let items: Vec<String> = score
+            .tempo_changes()
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        fields.push(format!("tc={}", items.join(";")));
+    }
     for (id, hits) in score
         .lanes()
         .into_iter()
@@ -332,6 +351,23 @@ fn unrle(s: &str) -> String {
         }
     }
     out
+}
+
+/// The `;`-separated tempo changes, each one that can't be read dropped.
+fn decode_tempo_changes(
+    raw: Option<&str>,
+    bars: usize,
+    issues: &mut Vec<Issue>,
+) -> Vec<TempoChange> {
+    let raw = safe_decode(raw.unwrap_or_default());
+    raw.split(';')
+        .filter(|item| !item.is_empty())
+        .filter_map(|item| {
+            TempoChange::parse(item, bars)
+                .map_err(|e| issues.push(Issue::TempoChangeIgnored(e)))
+                .ok()
+        })
+        .collect()
 }
 
 /// The `;`-separated bars, each one that can't be read replaced with 4/4 in 16ths, up to `MAX_BARS`.
@@ -687,11 +723,8 @@ mod tests {
 
     #[test]
     fn reserved_keys_are_not_lanes() {
-        let decoded = decode("#v=2&b=4/4:4&tc=x&ov=y");
-        assert_eq!(
-            messages(&decoded),
-            ["unknown field 'tc' ignored", "unknown field 'ov' ignored"]
-        );
+        let decoded = decode("#v=2&b=4/4:4&ov=y");
+        assert_eq!(messages(&decoded), ["unknown field 'ov' ignored"]);
         assert_eq!(decoded.score.lanes(), [] as [&str; 0]);
     }
 
@@ -909,6 +942,29 @@ mod tests {
             let decoded = decode(&format!("#v=2&sw={sw}"));
             assert_eq!(decoded.score.swing(), 0.0, "{sw}");
             assert_eq!(messages(&decoded), [msg], "{sw}");
+        }
+    }
+
+    #[test]
+    fn reads_tempo_changes() {
+        let decoded = decode("#v=2&b=4/4:4;6/8:6&tc=1:3/2~1");
+        assert_eq!(messages(&decoded), [] as [String; 0]);
+        assert_eq!(encode(&decoded.score), "v=2&q=80&b=4/4:4;6/8:6&tc=1:3/2~1");
+    }
+
+    #[test]
+    fn rejects_bad_tempo_changes() {
+        let rows = [
+            ("x:1~1", "tempo change ignored: 'x:1~1' is not bar:unit~old"),
+            ("1:1/0~1", "tempo change ignored: bad rational 1/0"),
+            ("1:1/2/3~1", "tempo change ignored: bad fraction '1/2/3'"),
+            ("1:0~1", "tempo change ignored: 0 is not a note value"),
+            ("9:3/2~1", "tempo change ignored: bar 9 doesn't exist"),
+        ];
+        for (tc, msg) in rows {
+            let decoded = decode(&format!("#v=2&b=4/4:4;6/8:6&tc={tc}"));
+            assert_eq!(messages(&decoded), [msg], "{tc}");
+            assert_eq!(encode(&decoded.score), "v=2&q=80&b=4/4:4;6/8:6", "{tc}");
         }
     }
 }

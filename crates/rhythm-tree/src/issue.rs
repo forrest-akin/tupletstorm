@@ -4,6 +4,7 @@ use std::fmt;
 
 use crate::codec::MAX_BARS;
 use crate::node::MAX_DEPTH;
+use crate::rat::Rat;
 
 /// How serious an issue is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -76,6 +77,8 @@ pub enum Issue {
         /// What was done about it.
         fit: Fit,
     },
+    /// A tempo change could not be read and was dropped.
+    TempoChangeIgnored(TempoChangeError),
     /// A field the format doesn't have was ignored.
     UnknownField {
         /// The field's key.
@@ -125,6 +128,7 @@ impl fmt::Display for Issue {
                 slots,
                 fit,
             } => write!(f, "{lane} bar {bar}: {hits} hits for {slots} slots; {fit}"),
+            Issue::TempoChangeIgnored(e) => write!(f, "tempo change ignored: {e}"),
             Issue::UnknownField { key } => write!(f, "unknown field '{key}' ignored"),
         }
     }
@@ -329,6 +333,50 @@ impl fmt::Display for ParseError {
             ParseError::TooManySlots { slots } => {
                 write!(f, "{slots} slots in one bar is too many")
             }
+        }
+    }
+}
+
+/// Why a tempo change could not be read.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TempoChangeError {
+    /// The text is not `p/q` or `p` in digits that fit an `i64`.
+    BadFraction {
+        /// The text.
+        text: String,
+    },
+    /// A tempo change is not `bar:unit~old`.
+    NotTempoChange {
+        /// The item.
+        item: String,
+    },
+    /// A tempo change is at a bar the groove doesn't have.
+    NoSuchBar {
+        /// The bar, from 0.
+        bar: u32,
+    },
+    /// A tempo change's note value is 0.
+    ZeroNoteValue {
+        /// The note value.
+        value: Rat,
+    },
+    /// A fraction's denominator is 0.
+    BadRational {
+        /// The numerator.
+        num: i64,
+        /// The denominator.
+        den: i64,
+    },
+}
+
+impl fmt::Display for TempoChangeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TempoChangeError::BadFraction { text } => write!(f, "bad fraction '{text}'"),
+            TempoChangeError::NotTempoChange { item } => write!(f, "'{item}' is not bar:unit~old"),
+            TempoChangeError::NoSuchBar { bar } => write!(f, "bar {bar} doesn't exist"),
+            TempoChangeError::ZeroNoteValue { value } => write!(f, "{value} is not a note value"),
+            TempoChangeError::BadRational { num, den } => write!(f, "bad rational {num}/{den}"),
         }
     }
 }

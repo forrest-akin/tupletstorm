@@ -82,3 +82,9 @@ test('opens groupings', () => {
   expect(view(openLink('#v=2&b=5/8~3-2:6,4').link, []).bars[0].grouping).toBe('3+2');
   expect(openLink(cases[15].input).link).toBe(cases[15].encoded);
 });
+
+test('keeps tempo changes', () => {
+  const { link } = openLink(cases[3].input);
+  expect(link).toBe(cases[3].encoded);
+  expect(setHit(link, 'hh', 0, 1, 'x')).toContain('&tc=3:3/2~1&');
+});

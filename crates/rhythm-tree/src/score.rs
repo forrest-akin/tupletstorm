@@ -1,9 +1,12 @@
-//! A groove: its title, author, comments, tempo, swing, bars and each lane's hits.
+//! A groove: its title, author, comments, tempo, swing, bars, tempo changes and each lane's hits.
 
 use std::collections::BTreeMap;
+use std::fmt;
 
 use crate::bar::Bar;
-use crate::issue::EditError;
+use crate::issue::{EditError, TempoChangeError};
+use crate::node::int;
+use crate::rat::Rat;
 
 /// A kit piece: one row of hits.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -48,6 +51,48 @@ pub fn letters(id: &str) -> &'static str {
     lane(id).map_or("x", |lane| lane.chars)
 }
 
+/// From the top of `bar`, the note value `unit` takes the beat of the value `old` had.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct TempoChange {
+    bar: u32,
+    unit: Rat,
+    old: Rat,
+}
+
+impl TempoChange {
+    /// `bar:unit~old`, in a groove of `bars` bars.
+    pub(crate) fn parse(item: &str, bars: usize) -> Result<TempoChange, TempoChangeError> {
+        let not = || TempoChangeError::NotTempoChange {
+            item: item.to_string(),
+        };
+        let note = |s: &str| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit() || b == b'/');
+        let (bar, rest) = item.split_once(':').ok_or_else(not)?;
+        let (unit, old) = rest.split_once('~').ok_or_else(not)?;
+        let bar = int(bar).ok_or_else(not)?;
+        if !note(unit) || !note(old) {
+            return Err(not());
+        }
+        if bar as usize >= bars {
+            return Err(TempoChangeError::NoSuchBar { bar });
+        }
+        let note_value = |s: &str| match s.parse::<Rat>()? {
+            value if value.num() == 0 => Err(TempoChangeError::ZeroNoteValue { value }),
+            value => Ok(value),
+        };
+        Ok(TempoChange {
+            bar,
+            unit: note_value(unit)?,
+            old: note_value(old)?,
+        })
+    }
+}
+
+impl fmt::Display for TempoChange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}~{}", self.bar, self.unit, self.old)
+    }
+}
+
 /// A decoded groove.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Score {
@@ -57,10 +102,12 @@ pub struct Score {
     tempo: f64,
     swing: f64,
     bars: Vec<Bar>,
+    tempo_changes: Vec<TempoChange>,
     hits: BTreeMap<String, Vec<String>>,
 }
 
 impl Score {
+    #[expect(clippy::too_many_arguments, reason = "decode sets every field at once")]
     pub(crate) fn new(
         title: String,
         author: String,
@@ -68,6 +115,7 @@ impl Score {
         tempo: f64,
         swing: f64,
         bars: Vec<Bar>,
+        tempo_changes: Vec<TempoChange>,
         hits: BTreeMap<String, Vec<String>>,
     ) -> Score {
         Score {
@@ -77,6 +125,7 @@ impl Score {
             tempo,
             swing,
             bars,
+            tempo_changes,
             hits,
         }
     }
@@ -109,6 +158,11 @@ impl Score {
     /// The bars, in order.
     pub fn bars(&self) -> &[Bar] {
         &self.bars
+    }
+
+    /// The tempo changes, in link order.
+    pub(crate) fn tempo_changes(&self) -> &[TempoChange] {
+        &self.tempo_changes
     }
 
     /// A lane's hits, one string per bar with one letter per leaf, or `None` when the link has no such lane.
@@ -186,7 +240,7 @@ pub(crate) fn is_lane_key(key: &str) -> bool {
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
 }
 
-pub(crate) const KNOWN_KEYS: [&str; 7] = ["v", "t", "a", "c", "q", "sw", "b"];
+pub(crate) const KNOWN_KEYS: [&str; 8] = ["v", "t", "a", "c", "q", "sw", "b", "tc"];
 
 /// Format fields that are never lanes. Those not in `KNOWN_KEYS` are reported as unknown.
 const RESERVED_KEYS: [&str; 7] = ["t", "a", "c", "q", "sw", "tc", "ov"];

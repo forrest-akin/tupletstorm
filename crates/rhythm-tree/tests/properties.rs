@@ -59,6 +59,7 @@ proptest! {
         let decoded = decode(&link);
         prop_assert!(decoded.issues.is_empty(), "{:?}", decoded.issues);
         let e = encode(&decoded.score);
+        prop_assert_eq!(e.contains("&tc="), link.contains("&tc="));
         let again = decode(&e).score;
         prop_assert_eq!(encode(&again), e.clone());
         for lane in ["hh", "sn", "kk"] {
@@ -171,7 +172,8 @@ fn node() -> impl Strategy<Value = (String, usize)> {
     })
 }
 
-/// Link text for 1–4 bars with a title, a tempo and every leaf of `hh`, `sn` and `kk` written out.
+/// Link text for 1–4 bars with a title, a tempo, 0–2 tempo changes and every leaf of `hh`, `sn`
+/// and `kk` written out.
 fn groove() -> impl Strategy<Value = String> {
     (
         proptest::collection::vec(bar_spec(), 1..=4),
@@ -183,8 +185,9 @@ fn groove() -> impl Strategy<Value = String> {
                 .iter()
                 .map(|bar| Bar::parse(bar).unwrap().leaves().len())
                 .collect();
+            let head = format!("#v=2&t={title}&q={tempo}&b={}", bars.join(";"));
             (
-                Just(format!("#v=2&t={title}&q={tempo}&b={}", bars.join(";"))),
+                tempo_changes(bars.len()).prop_map(move |tc| format!("{head}{tc}")),
                 lane_hits("-xXo+", &slots),
                 lane_hits("-oOgxfdb", &slots),
                 lane_hits("-oO", &slots),
@@ -242,3 +245,21 @@ fn custom_lane() -> impl Strategy<Value = (String, Vec<String>)> {
 const CUSTOM_LANE_CHARS: [char; 16] = [
     '&', '=', '%', '#', '?', '.', ' ', '\t', '\n', '\u{3000}', '\u{feff}', '-', 'x', 'X', 'o', '+',
 ];
+
+/// `&tc=` with 0–2 items `bar:unit~old` on bars that exist, or nothing.
+fn tempo_changes(bars: usize) -> impl Strategy<Value = String> {
+    let note = || {
+        (1u32..=12, proptest::option::of(1u32..=8))
+            .prop_map(|(p, q)| q.map_or(p.to_string(), |q| format!("{p}/{q}")))
+    };
+    proptest::collection::vec((0..bars, note(), note()), 0..=2).prop_map(|items| {
+        if items.is_empty() {
+            return String::new();
+        }
+        let items: Vec<_> = items
+            .into_iter()
+            .map(|(bar, unit, old)| format!("{bar}:{unit}~{old}"))
+            .collect();
+        format!("&tc={}", items.join(";"))
+    })
+}
