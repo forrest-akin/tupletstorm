@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Nested tuplets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121417}
+a{color:#8CC6F3}a:hover{color:#B9DDF8}
+button{font:inherit;color:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #6CB4EE;outline-offset:2px}
+kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 6px;border-radius:4px;background:#2A2E36;border:1px solid #3A3F48;color:#ECE9E2;white-space:nowrap}
+</style>
+</helmet>
+<div style="min-height: 920px; background: #121417; color: #ECE9E2; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.4">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 24px; border-bottom: 1px solid #262A31">
+    <a href="Main.dc.html" style="height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #ECE9E2">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      Editor
+    </a>
+    <div style="min-width: 0; flex: 1 1 240px">
+      <div style="font-size: 12px; color: #8A909B">Untitled groove / Bar 1 · 4/4</div>
+      <h1 style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em">Tuplet editor</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600">{{bpm}}</span>
+      <span style="font-size: 12px; color: #8A909B">♩/min</span>
+    </div>
+  </header>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 24px 24px; align-items: flex-start">
+
+    <section aria-label="Tuplet layers" style="flex: 999 1 720px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; overflow: hidden">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid #262A31">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #A9AEB8">Bar 1</h2>
+        <span style="font-size: 12px; color: #8A909B">One row per nesting level. Brackets may cross beat lines.</span>
+        <div style="flex: 1 1 16px"></div>
+        <span style="display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; background: #1E2E24; color: #9FD8B0; font-size: 12px; font-weight: 500">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>
+          {{fillText}}
+        </span>
+      </div>
+
+      <div style="overflow-x: auto">
+        <div style="min-width: 900px">
+
+          <div style="display: flex; height: 30px; border-bottom: 1px solid #262A31">
+            <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">Beat</div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex">
+              <sc-for list="{{beatRuler}}" as="r" hint-placeholder-count="4">
+                <div style="flex: 1 1 0px; min-width: 0; display: flex; align-items: center; padding-left: 8px; box-shadow: inset 1px 0 0 {{r.sep}}; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600">{{r.text}}</div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; border-bottom: 1px solid #262A31">
+            <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; gap: 10px; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">
+              <svg aria-hidden="true" width="10" height="20" viewBox="0 0 10 20"><rect x="1" y="4" width="3" height="12" fill="#A9AEB8"></rect><rect x="6" y="4" width="3" height="12" fill="#A9AEB8"></rect></svg>
+              Notation
+            </div>
+            <div style="flex: 1 1 0px; min-width: 0; background: #F3EFE6; padding: 6px 0 2px">
+              <svg role="img" aria-label="Snare notation with kick on beats 1 and 3. Beats 1 and 2: a quarter-note triplet whose first two notes are split into eighths and whose third note holds a nested quintuplet of sixteenths. Beats 3 and 4: an eighth-note quintuplet whose last two notes hold a nested eighth-note triplet." viewBox="0 0 720 100" style="display: block; width: 100%; height: auto">
+                <path d="M0 60H720M0 68H720M0 76H720M0 84H720M0 92H720" stroke="#17181B" stroke-width="1"></path>
+                <path d="M719.3 60V92" stroke="#17181B" stroke-width="1.4"></path>
+                <path d="M34 88V40M94 72V40M154 72V40M214 72V40M256 72V40M280 72V40M304 72V40M328 72V40M352 72V40M400 88V40M472 72V40M544 72V40M604 72V40M652 72V40M700 72V40" stroke="#17181B" stroke-width="1.2"></path>
+                <g fill="#17181B">
+                  <rect x="33.4" y="40" width="61.2" height="4"></rect>
+                  <rect x="153.4" y="40" width="61.2" height="4"></rect>
+                  <rect x="255.4" y="40" width="97.2" height="4"></rect>
+                  <rect x="255.4" y="47" width="97.2" height="4"></rect>
+                  <rect x="399.4" y="40" width="301.2" height="4"></rect>
+                  <ellipse cx="30" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 30 72)"></ellipse>
+                  <ellipse cx="90" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 90 72)"></ellipse>
+                  <ellipse cx="150" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 150 72)"></ellipse>
+                  <ellipse cx="210" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 210 72)"></ellipse>
+                  <ellipse cx="252" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 252 72)"></ellipse>
+                  <ellipse cx="276" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 276 72)"></ellipse>
+                  <ellipse cx="300" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 300 72)"></ellipse>
+                  <ellipse cx="324" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 324 72)"></ellipse>
+                  <ellipse cx="348" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 348 72)"></ellipse>
+                  <ellipse cx="396" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 396 72)"></ellipse>
+                  <ellipse cx="468" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 468 72)"></ellipse>
+                  <ellipse cx="540" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 540 72)"></ellipse>
+                  <ellipse cx="600" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 600 72)"></ellipse>
+                  <ellipse cx="648" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 648 72)"></ellipse>
+                  <ellipse cx="696" cy="72" rx="4.6" ry="3.4" transform="rotate(-20 696 72)"></ellipse>
+                  <ellipse cx="30" cy="88" rx="4.6" ry="3.4" transform="rotate(-20 30 88)"></ellipse>
+                  <ellipse cx="396" cy="88" rx="4.6" ry="3.4" transform="rotate(-20 396 88)"></ellipse>
+                </g>
+                <path d="M26 18V12H183M201 12H360V18M247 34V28H292M310 28H356V34M390 18V12H539M557 12H706V18M594 34V28H641M659 28H706V34" stroke="#17181B" stroke-width="1.1" fill="none"></path>
+                <g font-family="'IBM Plex Sans', sans-serif" font-size="11" font-style="italic" font-weight="700" text-anchor="middle" fill="#17181B">
+                  <text x="192" y="16">3</text>
+                  <text x="301" y="32">5</text>
+                  <text x="548" y="16">5</text>
+                  <text x="650" y="32">3</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <div style="display: flex; height: 52px; border-bottom: 1px solid #262A31">
+            <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #262A31">
+              <span style="font-size: 12px; color: #A9AEB8">Level 1</span>
+              <span style="font-size: 11px; color: #8A909B">in the bar</span>
+            </div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; position: relative">
+              <sc-for list="{{level1}}" as="t" hint-placeholder-count="2">
+                <div style="flex: {{t.flex}} 1 0px; min-width: 0; padding: 6px 2px; display: flex">
+                  <sc-if value="{{t.isTup}}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{t.select}}" aria-pressed="{{t.pressed}}" aria-label="{{t.aria}}" style="flex: 1 1 0px; min-width: 0; border-radius: 8px; border: 1px solid {{t.border}}; background: {{t.bg}}; position: relative; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center">
+                      <span aria-hidden="true" style="position: absolute; left: 8px; right: 8px; top: 9px; height: 10px; border: 2px solid {{t.line}}; border-bottom: 0"></span>
+                      <span style="position: relative; background: {{t.bg}}; padding: 0 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: {{t.color}}; white-space: nowrap">{{t.label}}</span>
+                    </button>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-for list="{{beatLines}}" as="bl" hint-placeholder-count="3">
+                <span aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{bl.left}}%; border-left: 1px dashed #4A505A; pointer-events: none"></span>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; height: 52px; border-bottom: 1px solid #262A31">
+            <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid #262A31">
+              <span style="font-size: 12px; color: #A9AEB8">Level 2</span>
+              <span style="font-size: 11px; color: #8A909B">inside level 1</span>
+            </div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; position: relative">
+              <sc-for list="{{level2}}" as="t" hint-placeholder-count="4">
+                <div style="flex: {{t.flex}} 1 0px; min-width: 0; padding: 6px 2px; display: flex">
+                  <sc-if value="{{t.isTup}}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{t.select}}" aria-pressed="{{t.pressed}}" aria-label="{{t.aria}}" style="flex: 1 1 0px; min-width: 0; border-radius: 8px; border: 1px solid {{t.border}}; background: {{t.bg}}; position: relative; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center">
+                      <span aria-hidden="true" style="position: absolute; left: 6px; right: 6px; top: 9px; height: 10px; border: 2px solid {{t.line}}; border-bottom: 0"></span>
+                      <span style="position: relative; background: {{t.bg}}; padding: 0 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: {{t.color}}; white-space: nowrap">{{t.label}}</span>
+                    </button>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-for list="{{beatLines}}" as="bl" hint-placeholder-count="3">
+                <span aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{bl.left}}%; border-left: 1px dashed #4A505A; pointer-events: none"></span>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; height: 44px; border-bottom: 1px solid #262A31">
+            <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #8A909B">Level 3</div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; align-items: center; padding: 0 8px">
+              <div style="flex: 1 1 0px; height: 30px; border: 1px dashed #3A3F48; border-radius: 8px; display: flex; align-items: center; padding: 0 12px; font-size: 12px; color: #8A909B">Select notes inside a level-2 tuplet and press <kbd style="margin: 0 6px">Shift T</kbd> to nest again</div>
+            </div>
+          </div>
+
+          <sc-for list="{{lanes}}" as="lane" hint-placeholder-count="2">
+            <div style="display: flex; height: 48px; border-bottom: 1px solid #262A31">
+              <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; gap: 8px; border-right: 1px solid #262A31; font-size: 13px; font-weight: 500">
+                <span style="width: 9px; height: 9px; border-radius: 50%; background: #F2A541"></span>
+                {{lane.name}}
+              </div>
+              <div style="flex: 1 1 0px; min-width: 0; display: flex; position: relative">
+                <sc-for list="{{lane.cells}}" as="cell" hint-placeholder-count="15">
+                  <div style="flex: {{cell.flex}} 1 0px; min-width: 0; padding: 5px 1px; display: flex">
+                    <div style="flex: 1 1 0px; min-width: 0; border-radius: 5px; background: {{cell.bg}}; box-shadow: inset 0 0 0 1px {{cell.ring}}; display: flex; align-items: center; justify-content: center">
+                      <sc-if value="{{cell.on}}" hint-placeholder-val="{{ false }}"><span style="width: 11px; height: 11px; border-radius: 50%; background: #F2A541"></span></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-for list="{{beatLines}}" as="bl" hint-placeholder-count="3">
+                  <span aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{bl.left}}%; border-left: 1px dashed #4A505A; pointer-events: none"></span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+
+          <div style="display: flex; height: 32px">
+            <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">Length ♩</div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex">
+              <sc-for list="{{durs}}" as="d" hint-placeholder-count="15">
+                <div style="flex: {{d.flex}} 1 0px; min-width: 0; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: -0.03em; color: {{d.color}}; overflow: hidden; white-space: nowrap">{{d.text}}</div>
+              </sc-for>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <aside aria-label="Tuplet inspector" style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+      <section aria-label="Rhythm tree" style="background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; padding: 12px">
+        <h2 style="margin: 4px 4px 10px; font-size: 13px; font-weight: 600">Rhythm tree</h2>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <sc-for list="{{tree}}" as="r" hint-placeholder-count="10">
+            <sc-if value="{{r.isTup}}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{r.select}}" aria-pressed="{{r.pressed}}" style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 8px 4px {{r.pad}}px; border-radius: 8px; border: 1px solid {{r.border}}; background: {{r.bg}}; text-align: left; cursor: pointer">
+                <span aria-hidden="true" style="width: 10px; height: 10px; border-left: 1px solid #5A616C; border-bottom: 1px solid #5A616C; margin-top: -8px; flex: none"></span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: {{r.color}}">{{r.text}}</span>
+                <span style="font-size: 12px; color: #8A909B">{{r.sub}}</span>
+              </button>
+            </sc-if>
+            <sc-if value="{{r.isLeaf}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 2px 8px 2px {{r.pad}}px">
+                <span aria-hidden="true" style="width: 10px; height: 10px; border-left: 1px solid #3A3F48; border-bottom: 1px solid #3A3F48; margin-top: -8px; flex: none"></span>
+                <span style="font-size: 13px; color: #ECE9E2">{{r.text}}</span>
+                <span style="font-size: 12px; color: #8A909B">{{r.sub}}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{r.isRoot}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 2px 8px">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: #2A2E36">{{r.text}}</span>
+                <span style="font-size: 12px; color: #8A909B">{{r.sub}}</span>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+      </section>
+
+      <section aria-label="Selected tuplet" style="background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; overflow: hidden">
+        <div style="padding: 16px; border-bottom: 1px solid #262A31; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+          <div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #8A909B">{{selLevel}}</div>
+            <h2 style="margin: 4px 0 0; font-size: 18px; font-weight: 600">{{selTitle}}</h2>
+            <p style="margin: 2px 0 0; font-size: 13px; color: #A9AEB8">{{selSpan}}</p>
+          </div>
+          <div aria-label="{{selRatioAria}}" style="display: flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-weight: 600">
+            <span style="min-width: 40px; height: 44px; border-radius: 8px; background: #1D3347; border: 1px solid #6CB4EE; display: flex; align-items: center; justify-content: center; font-size: 20px">{{selN}}</span>
+            <span style="color: #8A909B; font-size: 18px">:</span>
+            <span style="min-width: 40px; height: 44px; border-radius: 8px; background: #22262D; border: 1px solid #3A3F48; display: flex; align-items: center; justify-content: center; font-size: 20px">{{selM}}</span>
+          </div>
+        </div>
+
+        <div style="padding: 16px; border-bottom: 1px solid #262A31; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; font-size: 13px">
+          <span style="color: #8A909B">Unit</span><span>{{selUnit}}</span>
+          <span style="color: #8A909B">Inside</span><span>{{selInside}}</span>
+          <span style="color: #8A909B">Holds</span><span>{{selKids}}</span>
+          <span style="color: #8A909B">Ratio chain</span><span style="font-family: 'IBM Plex Mono', monospace">{{selChain}}</span>
+          <span style="color: #8A909B">Each note</span><span style="font-family: 'IBM Plex Mono', monospace">{{selEach}} <span style="color: #F2A541">· {{selMs}}</span></span>
+        </div>
+
+        <div style="padding: 16px; border-bottom: 1px solid #262A31; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #A9AEB8">Number shows as</h3>
+            <div role="group" aria-label="Number shows as" style="display: flex; padding: 3px; background: #16191D; border: 1px solid #2E333B; border-radius: 10px">
+              <sc-for list="{{modes}}" as="o" hint-placeholder-count="3">
+                <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="flex: 1 1 0px; height: 36px; border: 0; border-radius: 7px; background: {{o.bg}}; color: {{o.color}}; font-family: 'IBM Plex Mono', monospace; font-weight: 600; cursor: pointer">{{o.text}}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #A9AEB8">Bracket</h3>
+            <div role="group" aria-label="Bracket" style="display: flex; padding: 3px; background: #16191D; border: 1px solid #2E333B; border-radius: 10px">
+              <sc-for list="{{brackets}}" as="o" hint-placeholder-count="3">
+                <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="flex: 1 1 0px; height: 36px; border: 0; border-radius: 7px; background: {{o.bg}}; color: {{o.color}}; cursor: pointer">{{o.text}}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+          <button type="button" style="min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; display: flex; justify-content: space-between; align-items: center; gap: 6px; cursor: pointer">Nest inside <kbd>⇧T</kbd></button>
+          <button type="button" style="min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; display: flex; justify-content: space-between; align-items: center; gap: 6px; cursor: pointer">Split a slot <kbd>S</kbd></button>
+          <button type="button" style="min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; display: flex; justify-content: space-between; align-items: center; gap: 6px; cursor: pointer">Change ratio <kbd>R</kbd></button>
+          <button type="button" style="min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid #5B3A3A; background: transparent; color: #F2A7A0; display: flex; justify-content: space-between; align-items: center; gap: 6px; cursor: pointer">Unwrap <kbd>⌫</kbd></button>
+        </div>
+      </section>
+
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":920}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.tups = {
+      A: { n: 3, m: 2, sym: '♩', word: 'quarter notes', span: 'Beats 1–2', depth: 1, parent: '', chain: '3:2', each: '2/3 ♩', q: 2 / 3, from: 0, to: 8, kids: 'Three slots: two split into 8ths, the third holds a 5:4' },
+      A3: { n: 5, m: 4, sym: '♬', word: '16th notes', span: 'Third slot of the 3:2 ♩', depth: 2, parent: 'A', chain: '3:2 × 5:4', each: '2/15 ♩', q: 2 / 15, from: 4, to: 8, kids: 'Five notes' },
+      B: { n: 5, m: 4, sym: '♪', word: '8th notes', span: 'Beats 3–4', depth: 1, parent: '', chain: '5:4', each: '2/5 ♩', q: 2 / 5, from: 9, to: 14, kids: 'Five slots: three notes, the last two hold a 3:2' },
+      Bn: { n: 3, m: 2, sym: '♪', word: '8th notes', span: 'Slots 4–5 of the 5:4 ♪', depth: 2, parent: 'B', chain: '5:4 × 3:2', each: '4/15 ♩', q: 4 / 15, from: 12, to: 14, kids: 'Three notes' }
+    };
+    this.leaves = [5, 5, 5, 5, 2, 2, 2, 2, 2, 6, 6, 6, 4, 4, 4];
+    this.frac = { 5: '1/3', 2: '2/15', 6: '2/5', 4: '4/15' };
+    this.state = { sel: 'A3', mode: 'ratio', bracket: 'auto', bpm: 90 };
+  }
+
+  label(id) {
+    var t = this.tups[id];
+    if (this.state.mode === 'num') return String(t.n);
+    if (this.state.mode === 'ratio') return t.n + ':' + t.m;
+    return t.n + ':' + t.m + ' ' + t.sym;
+  }
+
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var T = this.tups;
+    var sel = T[s.sel];
+    var par = sel.parent ? T[sel.parent] : null;
+
+    var mk = function (id, flex) {
+      var on = s.sel === id;
+      var t = T[id];
+      return {
+        isTup: true,
+        flex: flex,
+        label: self.label(id),
+        aria: 'Tuplet ' + t.n + ':' + t.m + ' ' + t.word + ', ' + t.span,
+        pressed: on,
+        bg: on ? '#1D3347' : '#1F2329',
+        border: on ? '#6CB4EE' : '#3A3F48',
+        line: on ? '#6CB4EE' : '#8A909B',
+        color: on ? '#B9DDF8' : '#ECE9E2',
+        select: function () { self.setState({ sel: id }); }
+      };
+    };
+    var gap = function (flex) { return { isTup: false, flex: flex }; };
+
+    var inRange = function (t, i) { return t && i >= t.from && i <= t.to; };
+    var snare = [];
+    var kick = [];
+    var durs = [];
+    this.leaves.forEach(function (u, i) {
+      var inSel = inRange(sel, i);
+      var inPar = inRange(par, i);
+      var bg = inSel ? 'rgba(108,180,238,0.18)' : (inPar ? 'rgba(108,180,238,0.07)' : '#22262D');
+      var ring = inSel ? '#6CB4EE' : 'transparent';
+      snare.push({ flex: u, on: true, bg: bg, ring: ring });
+      kick.push({ flex: u, on: i === 0 || i === 9, bg: bg, ring: ring });
+      durs.push({ flex: u, text: self.frac[u], color: inSel ? '#B9DDF8' : '#8A909B' });
+    });
+
+    var units = 0;
+    this.leaves.forEach(function (u) { units += u; });
+
+    var treeSrc = [
+      { kind: 'root', text: '4/4', sub: 'Bar 1' },
+      { kind: 'tup', id: 'A', depth: 1, sub: 'beats 1–2' },
+      { kind: 'leaf', depth: 2, text: '♪ ♪', sub: 'split in 2' },
+      { kind: 'leaf', depth: 2, text: '♪ ♪', sub: 'split in 2' },
+      { kind: 'tup', id: 'A3', depth: 2, sub: 'third slot' },
+      { kind: 'leaf', depth: 3, text: '5 × ♬', sub: '' },
+      { kind: 'tup', id: 'B', depth: 1, sub: 'beats 3–4' },
+      { kind: 'leaf', depth: 2, text: '♪ ♪ ♪', sub: 'slots 1–3' },
+      { kind: 'tup', id: 'Bn', depth: 2, sub: 'slots 4–5' },
+      { kind: 'leaf', depth: 3, text: '3 × ♪', sub: '' }
+    ];
+    var tree = treeSrc.map(function (r) {
+      var on = r.kind === 'tup' && s.sel === r.id;
+      return {
+        isRoot: r.kind === 'root',
+        isTup: r.kind === 'tup',
+        isLeaf: r.kind === 'leaf',
+        pad: 8 + (r.depth || 0) * 18,
+        text: r.kind === 'tup' ? self.label(r.id) + (s.mode === 'full' ? '' : ' ' + T[r.id].sym) : r.text,
+        sub: r.sub,
+        pressed: on,
+        bg: on ? '#1D3347' : 'transparent',
+        border: on ? '#6CB4EE' : 'transparent',
+        color: on ? '#B9DDF8' : '#ECE9E2',
+        select: function () { if (r.id) self.setState({ sel: r.id }); }
+      };
+    });
+
+    var seg = function (on) { return { bg: on ? '#2E333B' : 'transparent', color: on ? '#ECE9E2' : '#A9AEB8' }; };
+    var modes = [
+      { id: 'num', text: String(sel.n) },
+      { id: 'ratio', text: sel.n + ':' + sel.m },
+      { id: 'full', text: sel.n + ':' + sel.m + ' ' + sel.sym }
+    ].map(function (o) {
+      var on = s.mode === o.id;
+      var st = seg(on);
+      return { text: o.text, pressed: on, bg: st.bg, color: st.color, pick: function () { self.setState({ mode: o.id }); } };
+    });
+    var brackets = [{ id: 'auto', text: 'Auto' }, { id: 'always', text: 'Always' }, { id: 'never', text: 'Never' }].map(function (o) {
+      var on = s.bracket === o.id;
+      var st = seg(on);
+      return { text: o.text, pressed: on, bg: st.bg, color: st.color, pick: function () { self.setState({ bracket: o.id }); } };
+    });
+
+    var ms = sel.q * 60000 / s.bpm;
+
+    return {
+      bpm: String(s.bpm),
+      fillText: 'Fills 4/4 exactly · ' + (units / 15) + ' ♩',
+      beatRuler: [1, 2, 3, 4].map(function (n) { return { text: String(n), sep: n === 1 ? '#5A616C' : '#3A3F48' }; }),
+      beatLines: [{ left: 25 }, { left: 50 }, { left: 75 }],
+      level1: [mk('A', 30), mk('B', 30)],
+      level2: [gap(20), mk('A3', 10), gap(18), mk('Bn', 12)],
+      lanes: [{ name: 'Snare', cells: snare }, { name: 'Kick', cells: kick }],
+      durs: durs,
+      tree: tree,
+      selLevel: 'LEVEL ' + sel.depth + ' TUPLET',
+      selTitle: sel.n + ' in the time of ' + sel.m,
+      selSpan: sel.span,
+      selN: String(sel.n),
+      selM: String(sel.m),
+      selRatioAria: 'Ratio ' + sel.n + ' to ' + sel.m,
+      selUnit: sel.sym + ' ' + sel.word,
+      selInside: par ? par.n + ':' + par.m + ' ' + par.sym + ' (' + par.span.toLowerCase() + ')' : 'The bar itself',
+      selKids: sel.kids,
+      selChain: sel.chain,
+      selEach: sel.each,
+      selMs: ms.toFixed(1) + ' ms at ' + s.bpm,
+      modes: modes,
+      brackets: brackets
+    };
+  }
+}
+</script>
+</body>
+</html>

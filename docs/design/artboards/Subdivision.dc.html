@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Per-beat subdivisions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121417}
+a{color:#8CC6F3}a:hover{color:#B9DDF8}
+button{font:inherit;color:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #6CB4EE;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 860px; background: #121417; color: #ECE9E2; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.4">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 24px; border-bottom: 1px solid #262A31">
+    <a href="Main.dc.html" style="height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #ECE9E2">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      Editor
+    </a>
+    <div style="min-width: 0; flex: 1 1 240px">
+      <div style="font-size: 12px; color: #8A909B">Untitled groove / Bar 1 · 4/4</div>
+      <h1 style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em">Subdivision lens</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600">{{bpm}}</span>
+      <span style="font-size: 12px; color: #8A909B">♩/min · {{beatMsText}} per beat</span>
+    </div>
+  </header>
+
+  <div style="padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+
+    <section aria-label="Bar 1 grid" style="background: #1A1D22; border: 1px solid #262A31; border-radius: 12px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid #262A31">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #A9AEB8">Bar 1</h2>
+        <span style="font-size: 12px; color: #8A909B">Each beat picks its own split. A lane can override it for that beat.</span>
+      </div>
+
+      <div style="display: flex; height: 30px; border-bottom: 1px solid #262A31">
+        <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">Time</div>
+        <div style="flex: 1 1 0px; min-width: 0; display: flex">
+          <sc-for list="{{ruler}}" as="r" hint-placeholder-count="4">
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; align-items: center; padding-left: 8px; box-shadow: inset 1px 0 0 {{r.sep}}; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A909B">{{r.text}}</div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; height: 60px; border-bottom: 1px solid #262A31; position: relative; z-index: 3">
+        <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">Subdivision</div>
+        <div style="flex: 1 1 0px; min-width: 0; display: flex">
+          <sc-for list="{{beatHeads}}" as="b" hint-placeholder-count="4">
+            <div style="flex: 1 1 0px; min-width: 0; padding: 6px 4px; box-shadow: inset 1px 0 0 {{b.sep}}; display: flex; position: relative">
+              <button type="button" onClick="{{b.toggle}}" aria-expanded="{{b.isOpen}}" style="flex: 1 1 0px; min-width: 0; border-radius: 8px; border: 1px solid {{b.border}}; background: {{b.bg}}; padding: 4px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; overflow: hidden">
+                <span style="display: flex; flex-direction: column; min-width: 0">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A909B; white-space: nowrap">{{b.title}}</span>
+                  <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.label}} <sc-if value="{{b.hasRatio}}" hint-placeholder-val="{{ false }}"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: #8CC6F3">{{b.ratio}}</span></sc-if> <sc-if value="{{b.hasOv}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 500; color: #8CC6F3">{{b.ovText}}</span></sc-if></span>
+                </span>
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A9AEB8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M6 9l6 6 6-6"></path></svg>
+              </button>
+
+              <sc-if value="{{b.isOpen}}" hint-placeholder-val="{{ false }}">
+                <div role="dialog" aria-label="{{b.popTitle}}" style="position: absolute; top: 58px; left: {{b.popL}}; right: {{b.popR}}; width: 380px; max-width: 86vw; box-sizing: border-box; background: #22262D; border: 1px solid #3A3F48; border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); padding: 14px; display: flex; flex-direction: column; gap: 12px; z-index: 10">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+                    <h3 style="margin: 0; font-size: 14px; font-weight: 600">{{b.popTitle}}</h3>
+                    <button type="button" onClick="{{b.close}}" aria-label="Close" style="width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: #A9AEB8; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center">
+                      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                    </button>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: #8A909B">APPLY TO</span>
+                    <div role="group" aria-label="Apply to" style="display: flex; flex-wrap: wrap; gap: 4px">
+                      <sc-for list="{{b.popScopes}}" as="sc" hint-placeholder-count="4">
+                        <button type="button" onClick="{{sc.pick}}" aria-pressed="{{sc.pressed}}" style="height: 34px; padding: 0 10px; border-radius: 999px; border: 1px solid {{sc.border}}; background: {{sc.bg}}; font-size: 12px; font-weight: 500; cursor: pointer">{{sc.text}}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+                    <sc-for list="{{b.popOpts}}" as="o" hint-placeholder-count="7">
+                      <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" aria-label="{{o.aria}}" style="min-width: 0; min-height: 64px; border-radius: 8px; border: 1px solid {{o.border}}; background: {{o.bg}}; padding: 6px 8px; display: flex; flex-direction: column; gap: 5px; text-align: left; cursor: pointer">
+                        <span style="display: flex; justify-content: space-between; align-items: baseline; width: 100%">
+                          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600">{{o.n}}</span>
+                          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8CC6F3">{{o.ratio}}</span>
+                        </span>
+                        <span aria-hidden="true" style="display: flex; width: 100%; height: 6px; border-radius: 3px; background: #1A1D22; overflow: hidden">
+                          <sc-for list="{{o.slots}}" as="d" hint-placeholder-count="4">
+                            <span style="flex: 1 1 0px; min-width: 0; display: flex"><span style="width: 3px; height: 6px; background: {{o.tick}}"></span></span>
+                          </sc-for>
+                        </span>
+                        <span style="font-size: 11px; color: #A9AEB8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{o.name}}</span>
+                      </button>
+                    </sc-for>
+                    <button type="button" style="min-width: 0; min-height: 64px; border-radius: 8px; border: 1px dashed #3A3F48; background: transparent; color: #A9AEB8; font-size: 12px; cursor: pointer">Custom n</button>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap">
+                    <span style="font-size: 12px; color: #8A909B">{{b.popHint}}</span>
+                    <sc-if value="{{b.popHasClear}}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{b.popClear}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; font-size: 12px; cursor: pointer">Clear lane override</button>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <sc-for list="{{lanes}}" as="lane" hint-placeholder-count="3">
+        <div style="display: flex; height: 56px; border-bottom: 1px solid #262A31">
+          <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; flex-direction: column; justify-content: center; gap: 2px; border-right: 1px solid #262A31">
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500">
+              <sc-if value="{{lane.glyphX}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="#F2A541" stroke-width="2" stroke-linecap="round"></path></svg></sc-if>
+              <sc-if value="{{lane.glyphDot}}" hint-placeholder-val="{{ true }}"><span style="width: 9px; height: 9px; border-radius: 50%; background: #F2A541"></span></sc-if>
+              {{lane.name}}
+            </span>
+            <sc-if value="{{lane.hasOv}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; color: #8CC6F3">has its own split</span></sc-if>
+          </div>
+          <div style="flex: 1 1 0px; min-width: 0; display: flex">
+            <sc-for list="{{lane.beats}}" as="b" hint-placeholder-count="4">
+              <div style="flex: 1 1 0px; min-width: 0; display: flex; box-shadow: inset 1px 0 0 {{b.sep}}; background: {{b.bg}}; position: relative">
+                <sc-for list="{{b.cells}}" as="cell" hint-placeholder-count="4">
+                  <div style="flex: 1 1 0px; min-width: 0; padding: 6px 2px; display: flex">
+                    <button type="button" onClick="{{cell.toggle}}" aria-pressed="{{cell.pressed}}" aria-label="{{cell.label}}" style="flex: 1 1 0px; min-width: 0; border: 0; border-radius: 6px; background: {{cell.bg}}; box-shadow: inset 2px 0 0 {{cell.onset}}; padding: 0 0 0 6px; cursor: pointer; display: flex; align-items: center; justify-content: flex-start">
+                      <sc-if value="{{cell.dot}}" hint-placeholder-val="{{ false }}"><span style="width: 12px; height: 12px; border-radius: 50%; background: #F2A541"></span></sc-if>
+                      <sc-if value="{{cell.x}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="#F2A541" stroke-width="2.4" stroke-linecap="round"></path></svg></sc-if>
+                      <sc-if value="{{cell.accDot}}" hint-placeholder-val="{{ false }}"><span style="width: 18px; height: 18px; border-radius: 50%; background: #FFC66E; color: #1A1406; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1">&gt;</span></sc-if>
+                      <sc-if value="{{cell.accX}}" hint-placeholder-val="{{ false }}"><span style="width: 18px; height: 18px; border-radius: 50%; border: 2px solid #FFC66E; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="#FFC66E" stroke-width="2.4" stroke-linecap="round"></path></svg></span></sc-if>
+                      <sc-if value="{{cell.ghost}}" hint-placeholder-val="{{ false }}"><span style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid #F2A541"></span></sc-if>
+                    </button>
+                  </div>
+                </sc-for>
+                <sc-if value="{{b.isOv}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: -1px; right: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; padding: 0 5px; border-radius: 0 0 4px 4px; background: #6CB4EE; color: #0E1A24">{{b.ovText}}</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="display: flex; height: 64px">
+        <div style="width: 132px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; justify-content: space-between; border-right: 1px solid #262A31">
+          <span style="font-size: 12px; color: #A9AEB8">Onsets</span>
+          <span aria-hidden="true" style="display: flex; flex-direction: column; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A909B; line-height: 18px; padding-top: 2px">
+            <span>H</span><span>S</span><span>K</span>
+          </span>
+        </div>
+        <div role="img" aria-label="{{onsetAria}}" style="flex: 1 1 0px; min-width: 0; display: flex; position: relative">
+          <sc-for list="{{ruler}}" as="r" hint-placeholder-count="4">
+            <div style="flex: 1 1 0px; min-width: 0; box-shadow: inset 1px 0 0 {{r.sep}}"></div>
+          </sc-for>
+          <sc-for list="{{ticks}}" as="t" hint-placeholder-count="0">
+            <span style="position: absolute; left: {{t.left}}%; top: {{t.top}}px; width: 3px; height: 14px; margin-left: -1px; border-radius: 2px; background: #F2A541"></span>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+      <section aria-label="Timing" style="flex: 2 1 520px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600">Playback timing</h2>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A909B">{{timingTitle}}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <sc-for list="{{timing}}" as="row" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+              <span style="width: 120px; font-size: 13px">{{row.name}} <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A909B">÷{{row.n}}</span></span>
+              <span style="display: flex; flex-wrap: wrap; gap: 4px">
+                <sc-for list="{{row.slots}}" as="sl" hint-placeholder-count="4">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: {{sl.weight}}; color: {{sl.color}}; background: {{sl.bg}}; border: 1px solid #2E333B; border-radius: 6px; padding: 3px 7px">{{sl.ms}}</span>
+                </sc-for>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; color: #8A909B">Milliseconds from the top of the bar. Highlighted slots are played.</span>
+      </section>
+
+      <section aria-label="Lane overrides" style="flex: 1 1 320px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 600">Lane overrides</h2>
+        <sc-if value="{{hasOverrides}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{overrides}}" as="o" hint-placeholder-count="1">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; background: #16191D; border: 1px solid #2E333B">
+                <span style="display: flex; flex-direction: column">
+                  <span style="font-size: 13px; font-weight: 600">{{o.text}}</span>
+                  <span style="font-size: 12px; color: #8CC6F3">{{o.detail}}</span>
+                </span>
+                <button type="button" onClick="{{o.clear}}" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">Clear</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{noOverrides}}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; font-size: 13px; color: #A9AEB8">Every lane follows its beat. Open a beat's menu and choose a single lane to play a different split against the others.</p>
+        </sc-if>
+      </section>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":860}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.lanes = [
+      { id: 'hh', name: 'Hi-hat', x: true, states: 3 },
+      { id: 'sn', name: 'Snare', x: false, states: 4 },
+      { id: 'kk', name: 'Kick', x: false, states: 3 }
+    ];
+    var beats = [
+      { id: 'b1', n: 1, sub: 4, ov: {} },
+      { id: 'b2', n: 2, sub: 4, ov: {} },
+      { id: 'b3', n: 3, sub: 4, ov: { hh: 5 } },
+      { id: 'b4', n: 4, sub: 3, ov: {} }
+    ];
+    var init = {
+      hh: { b1: '1111', b2: '1111', b3: '11111', b4: '000' },
+      sn: { b1: '0000', b2: '1000', b3: '0010', b4: '211' },
+      kk: { b1: '1001', b2: '0010', b3: '1001', b4: '100' }
+    };
+    var notes = {};
+    this.lanes.forEach(function (lane) {
+      notes[lane.id] = {};
+      beats.forEach(function (b) {
+        var n = b.ov[lane.id] || b.sub;
+        var s = init[lane.id][b.id] || '';
+        var arr = [];
+        for (var i = 0; i < n; i++) arr.push(Number(s.charAt(i) || 0));
+        notes[lane.id][b.id] = arr;
+      });
+    });
+    this.state = { beats: beats, notes: notes, open: 'b3', scope: 'hh', focus: 'b3', bpm: 96 };
+  }
+
+  lane(id) {
+    return this.lanes.find(function (l) { return l.id === id; });
+  }
+
+  subInfo(n) {
+    var a = { 2: ['8ths', ''], 3: ['Triplets', '3:2'], 4: ['16ths', ''], 5: ['Quintuplets', '5:4'], 6: ['Sextuplets', '6:4'], 7: ['Septuplets', '7:4'], 8: ['32nds', ''] };
+    return a[n] || [n + ' notes', n + ':4'];
+  }
+
+  remap(arr, oldN, newN) {
+    var next = [];
+    for (var j = 0; j < newN; j++) next.push(0);
+    arr.forEach(function (v, i) {
+      if (!v) return;
+      var k = Math.round(i * newN / oldN);
+      if (k < newN) next[k] = Math.max(next[k], v);
+    });
+    return next;
+  }
+
+  setAll(beatId, n) {
+    var self = this;
+    var s = this.state;
+    var notes = {};
+    this.lanes.forEach(function (l) { notes[l.id] = Object.assign({}, s.notes[l.id]); });
+    var beats = s.beats.map(function (b) {
+      if (b.id !== beatId) return b;
+      self.lanes.forEach(function (l) {
+        var oldN = b.ov[l.id] || b.sub;
+        notes[l.id][b.id] = self.remap(s.notes[l.id][b.id], oldN, n);
+      });
+      return Object.assign({}, b, { sub: n, ov: {} });
+    });
+    this.setState({ beats: beats, notes: notes });
+  }
+
+  setLane(beatId, lid, n) {
+    var self = this;
+    var s = this.state;
+    var notes = Object.assign({}, s.notes);
+    var ln = Object.assign({}, notes[lid]);
+    var beats = s.beats.map(function (b) {
+      if (b.id !== beatId) return b;
+      var oldN = b.ov[lid] || b.sub;
+      ln[b.id] = self.remap(s.notes[lid][b.id], oldN, n);
+      var ov = Object.assign({}, b.ov);
+      if (n === b.sub) delete ov[lid]; else ov[lid] = n;
+      return Object.assign({}, b, { ov: ov });
+    });
+    notes[lid] = ln;
+    this.setState({ beats: beats, notes: notes });
+  }
+
+  toggle(lid, beatId, i) {
+    var lane = this.lane(lid);
+    var notes = Object.assign({}, this.state.notes);
+    var ln = Object.assign({}, notes[lid]);
+    var arr = ln[beatId].slice();
+    arr[i] = (arr[i] + 1) % lane.states;
+    ln[beatId] = arr;
+    notes[lid] = ln;
+    this.setState({ notes: notes });
+  }
+
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var beatMs = 60000 / s.bpm;
+    var sepFor = function (bi) { return bi === 0 ? '#5A616C' : '#3A3F48'; };
+
+    var ruler = s.beats.map(function (b, bi) { return { text: Math.round(bi * beatMs) + ' ms', sep: sepFor(bi) }; });
+
+    var beatHeads = s.beats.map(function (b, bi) {
+      var info = self.subInfo(b.sub);
+      var isOpen = s.open === b.id;
+      var ovKeys = Object.keys(b.ov);
+      var cur = s.scope === 'all' ? b.sub : (b.ov[s.scope] || b.sub);
+      var scopeName = s.scope === 'all' ? 'all lanes' : self.lane(s.scope).name;
+      var item = {
+        sep: sepFor(bi),
+        title: 'Beat ' + b.n,
+        label: info[0],
+        ratio: info[1],
+        hasRatio: !!info[1],
+        hasOv: ovKeys.length > 0,
+        ovText: ovKeys.map(function (k) { return '· ' + self.lane(k).name + ' ' + b.ov[k]; }).join(' '),
+        isOpen: isOpen,
+        border: isOpen ? '#6CB4EE' : '#2E333B',
+        bg: isOpen ? '#1D3347' : '#1F2329',
+        toggle: function () {
+          if (isOpen) self.setState({ open: null });
+          else self.setState({ open: b.id, scope: 'all', focus: b.id });
+        },
+        close: function () { self.setState({ open: null }); },
+        popL: bi < 2 ? '4px' : 'auto',
+        popR: bi < 2 ? 'auto' : '4px',
+        popTitle: 'Beat ' + b.n + ' subdivision',
+        popHint: 'Now editing ' + scopeName + '. Existing notes snap to the nearest slot.',
+        popHasClear: s.scope !== 'all' && !!b.ov[s.scope],
+        popClear: function () { self.setLane(b.id, s.scope, b.sub); },
+        popScopes: [],
+        popOpts: []
+      };
+      if (isOpen) {
+        item.popScopes = [{ id: 'all', text: 'All lanes' }].concat(self.lanes.map(function (l) { return { id: l.id, text: 'Only ' + l.name }; })).map(function (o) {
+          var on = s.scope === o.id;
+          return { text: o.text, pressed: on, bg: on ? '#1D3347' : 'transparent', border: on ? '#6CB4EE' : '#3A3F48', pick: function () { self.setState({ scope: o.id }); } };
+        });
+        item.popOpts = [2, 3, 4, 5, 6, 7, 8].map(function (n) {
+          var inf = self.subInfo(n);
+          var on = n === cur;
+          var slots = [];
+          for (var k = 0; k < n; k++) slots.push({ k: k });
+          return {
+            n: String(n),
+            name: inf[0],
+            ratio: inf[1],
+            aria: inf[0] + (inf[1] ? ', ' + inf[1] : '') + ' for ' + scopeName,
+            pressed: on,
+            bg: on ? '#1D3347' : '#1A1D22',
+            border: on ? '#6CB4EE' : '#2E333B',
+            tick: on ? '#6CB4EE' : '#8A909B',
+            slots: slots,
+            pick: function () {
+              if (self.state.scope === 'all') self.setAll(b.id, n);
+              else self.setLane(b.id, self.state.scope, n);
+            }
+          };
+        });
+      }
+      return item;
+    });
+
+    var stateNames = ['off', 'hit', 'accent', 'ghost note'];
+    var lanes = this.lanes.map(function (lane) {
+      return {
+        name: lane.name,
+        glyphX: lane.x,
+        glyphDot: !lane.x,
+        hasOv: s.beats.some(function (b) { return !!b.ov[lane.id]; }),
+        beats: s.beats.map(function (b, bi) {
+          var arr = s.notes[lane.id][b.id];
+          var n = arr.length;
+          var isOv = !!b.ov[lane.id];
+          return {
+            sep: sepFor(bi),
+            bg: isOv ? 'rgba(108,180,238,0.11)' : (s.open === b.id ? 'rgba(108,180,238,0.05)' : 'transparent'),
+            isOv: isOv,
+            ovText: n + ' vs ' + b.sub,
+            cells: arr.map(function (v, i) {
+              return {
+                toggle: function () { self.toggle(lane.id, b.id, i); },
+                label: lane.name + ', beat ' + b.n + ', note ' + (i + 1) + ' of ' + n + ': ' + stateNames[v],
+                pressed: v > 0,
+                bg: i === 0 ? '#2A2E36' : '#22262D',
+                onset: v ? '#F2A541' : '#3A3F48',
+                dot: v === 1 && !lane.x,
+                x: v === 1 && lane.x,
+                accDot: v === 2 && !lane.x,
+                accX: v === 2 && lane.x,
+                ghost: v === 3
+              };
+            })
+          };
+        })
+      };
+    });
+
+    var ticks = [];
+    var onsetCount = 0;
+    this.lanes.forEach(function (lane, li) {
+      s.beats.forEach(function (b, bi) {
+        var arr = s.notes[lane.id][b.id];
+        var n = arr.length;
+        arr.forEach(function (v, i) {
+          if (!v) return;
+          onsetCount++;
+          ticks.push({ left: ((bi + i / n) / s.beats.length * 100).toFixed(3), top: 6 + li * 18 });
+        });
+      });
+    });
+
+    var fid = s.open || s.focus;
+    var fb = s.beats.find(function (b) { return b.id === fid; }) || s.beats[2];
+    var fbi = s.beats.indexOf(fb);
+    var timing = this.lanes.map(function (lane) {
+      var arr = s.notes[lane.id][fb.id];
+      var n = arr.length;
+      return {
+        name: lane.name,
+        n: String(n),
+        slots: arr.map(function (v, i) {
+          return {
+            ms: String(Math.round((fbi + i / n) * beatMs)),
+            color: v ? '#F2A541' : '#8A909B',
+            weight: v ? '600' : '500',
+            bg: v ? '#3A2F1C' : 'transparent'
+          };
+        })
+      };
+    });
+
+    var overrides = [];
+    s.beats.forEach(function (b) {
+      Object.keys(b.ov).forEach(function (k) {
+        overrides.push({
+          text: 'Beat ' + b.n + ' · ' + self.lane(k).name,
+          detail: b.ov[k] + ' against ' + b.sub + ' in the other lanes',
+          clear: function () { self.setLane(b.id, k, b.sub); }
+        });
+      });
+    });
+
+    return {
+      bpm: String(s.bpm),
+      beatMsText: Math.round(beatMs) + ' ms',
+      ruler: ruler,
+      beatHeads: beatHeads,
+      lanes: lanes,
+      ticks: ticks,
+      onsetAria: onsetCount + ' note onsets across hi-hat, snare and kick in bar 1',
+      timing: timing,
+      timingTitle: 'Beat ' + fb.n + ' · ' + Math.round(fbi * beatMs) + '–' + Math.round((fbi + 1) * beatMs) + ' ms',
+      overrides: overrides,
+      hasOverrides: overrides.length > 0,
+      noOverrides: overrides.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

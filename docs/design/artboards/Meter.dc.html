@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mixed meters</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121417}
+a{color:#8CC6F3}a:hover{color:#B9DDF8}
+button{font:inherit;color:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #6CB4EE;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #121417; color: #ECE9E2; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.4">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 24px; border-bottom: 1px solid #262A31">
+    <a href="Main.dc.html" style="height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #ECE9E2">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      Editor
+    </a>
+    <div style="min-width: 0; flex: 1 1 240px">
+      <div style="font-size: 12px; color: #8A909B">Untitled groove /</div>
+      <h1 style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em">Bars and meters</h1>
+    </div>
+    <div style="text-align: right">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600">{{summaryMain}}</div>
+      <div style="font-size: 12px; color: #8A909B">{{summarySub}}</div>
+    </div>
+  </header>
+
+  <div style="padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 16px">
+
+    <section aria-label="Arrangement" style="background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; overflow: hidden">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid #262A31">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #A9AEB8">Arrangement</h2>
+        <span style="font-size: 12px; color: #8A909B">Bar width follows its length in time. A meter is printed where it changes.</span>
+        <div style="flex: 1 1 16px"></div>
+        <button type="button" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">+ Bar</button>
+        <button type="button" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">+ Section marker</button>
+      </div>
+      <div style="overflow-x: auto">
+        <div style="min-width: 1180px; display: flex; padding: 14px 13px">
+          <sc-for list="{{blocks}}" as="b" hint-placeholder-count="8">
+            <div style="flex: {{b.flex}} 1 0px; min-width: 0; padding: 0 3px; display: flex">
+              <button type="button" onClick="{{b.select}}" aria-pressed="{{b.pressed}}" aria-label="{{b.aria}}" style="flex: 1 1 0px; min-width: 0; height: 150px; box-sizing: border-box; border-radius: 10px; border: 2px solid {{b.border}}; background: {{b.bg}}; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; text-align: left; cursor: pointer; overflow: hidden">
+                <span style="display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A909B">{{b.label}}</span>
+                  <sc-if value="{{b.hasSec}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: #F2A541; color: #1A1406">{{b.sec}}</span></sc-if>
+                </span>
+                <span style="display: flex; flex-direction: column; align-items: flex-start; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 26px; line-height: 0.95; color: {{b.meterColor}}">
+                  <span>{{b.num}}</span>
+                  <span>{{b.den}}</span>
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 6px; width: 100%">
+                  <span style="display: flex; gap: 4px; width: 100%">
+                    <sc-for list="{{b.groups}}" as="g" hint-placeholder-count="3">
+                      <span style="flex: {{g.flex}} 1 0px; min-width: 0; display: flex; align-items: center; justify-content: space-between; padding: 5px 4px; border-radius: 4px; background: #2A2E36">
+                        <sc-for list="{{g.dots}}" as="d" hint-placeholder-count="2">
+                          <sc-if value="{{d.big}}" hint-placeholder-val="{{ true }}"><span style="width: 8px; height: 8px; border-radius: 50%; background: #F2A541; flex: none"></span></sc-if>
+                          <sc-if value="{{d.small}}" hint-placeholder-val="{{ false }}"><span style="width: 5px; height: 5px; border-radius: 50%; background: #8A909B; flex: none"></span></sc-if>
+                        </sc-for>
+                      </span>
+                    </sc-for>
+                  </span>
+                  <span style="font-size: 11px; color: #A9AEB8; font-family: 'IBM Plex Mono', monospace; white-space: nowrap">{{b.grpText}}</span>
+                </span>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+
+      <section aria-label="Time signature" style="flex: 1 1 320px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+        <div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #8A909B">{{selLabel}}</div>
+          <h2 style="margin: 4px 0 0; font-size: 16px; font-weight: 600">Time signature</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+          <div role="group" aria-label="Beats per bar" style="display: flex; align-items: center; height: 48px; border: 1px solid #3A3F48; border-radius: 10px">
+            <button type="button" onClick="{{numDown}}" aria-label="Fewer beats" style="width: 44px; height: 46px; border: 0; background: transparent; font-size: 20px; cursor: pointer; padding: 0">−</button>
+            <span style="min-width: 48px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 600">{{selNum}}</span>
+            <button type="button" onClick="{{numUp}}" aria-label="More beats" style="width: 44px; height: 46px; border: 0; background: transparent; font-size: 20px; cursor: pointer; padding: 0">+</button>
+          </div>
+          <span aria-hidden="true" style="font-size: 24px; color: #5A616C">/</span>
+          <div role="group" aria-label="Beat unit" style="display: flex; gap: 4px">
+            <sc-for list="{{dens}}" as="d" hint-placeholder-count="4">
+              <button type="button" onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" style="width: 44px; height: 48px; border-radius: 8px; border: 1px solid {{d.border}}; background: {{d.bg}}; font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600; cursor: pointer; padding: 0">{{d.text}}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #A9AEB8">Common meters</h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px">
+            <sc-for list="{{presets}}" as="p" hint-placeholder-count="11">
+              <button type="button" onClick="{{p.pick}}" aria-pressed="{{p.pressed}}" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid {{p.border}}; background: {{p.bg}}; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; cursor: pointer">{{p.text}}</button>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Beat grouping" style="flex: 2 1 460px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+          <div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #8A909B">{{unitLabel}}</div>
+            <h2 style="margin: 4px 0 0; font-size: 16px; font-weight: 600">Beat grouping</h2>
+          </div>
+          <span style="font-size: 12px; color: #8A909B">Sets beaming, grid beat lines and click accents</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; border-radius: 10px; background: #16191D; border: 1px solid #262A31">
+          <sc-for list="{{lens}}" as="g" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; gap: 4px">
+                <sc-for list="{{g.units}}" as="u" hint-placeholder-count="2">
+                  <div style="width: 40px; height: 54px; box-sizing: border-box; border-radius: 8px; border: 1px solid {{u.border}}; background: {{u.bg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 600; color: {{u.color}}">{{u.count}}</span>
+                    <span style="font-size: 11px; color: #8A909B">{{u.sym}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <span style="font-size: 11px; color: #A9AEB8">{{g.caption}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #A9AEB8">Groupings for {{selMeter}}</h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px">
+            <sc-for list="{{grpOpts}}" as="o" hint-placeholder-count="3">
+              <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid {{o.border}}; background: {{o.bg}}; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; cursor: pointer">{{o.text}}</button>
+            </sc-for>
+            <button type="button" style="height: 44px; padding: 0 14px; border-radius: 8px; border: 1px dashed #3A3F48; background: transparent; color: #A9AEB8; cursor: pointer">Custom…</button>
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Apply" style="flex: 1 1 320px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 600">Apply</h2>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #A9AEB8">Scope</h3>
+          <div role="group" aria-label="Scope" style="display: flex; padding: 3px; background: #16191D; border: 1px solid #2E333B; border-radius: 10px">
+            <sc-for list="{{scopes}}" as="o" hint-placeholder-count="2">
+              <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="flex: 1 1 0px; height: 38px; border: 0; border-radius: 7px; background: {{o.bg}}; color: {{o.color}}; font-weight: {{o.weight}}; cursor: pointer">{{o.text}}</button>
+            </sc-for>
+          </div>
+          <span style="font-size: 12px; color: #8A909B">{{scopeNote}}</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #A9AEB8">Tempo across the barline</h3>
+          <sc-for list="{{rels}}" as="o" hint-placeholder-count="2">
+            <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid {{o.border}}; background: {{o.bg}}; text-align: left; cursor: pointer">
+              <span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid {{o.ring}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex: none"><sc-if value="{{o.pressed}}" hint-placeholder-val="{{ false }}"><span style="width: 6px; height: 6px; border-radius: 50%; background: #6CB4EE"></span></sc-if></span>
+              <span style="display: flex; flex-direction: column">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">{{o.text}}</span>
+                <span style="font-size: 12px; color: #8A909B">{{o.sub}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #A9AEB8">If the bar gets shorter</h3>
+          <sc-for list="{{overflows}}" as="o" hint-placeholder-count="2">
+            <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px; border-radius: 8px; border: 1px solid {{o.border}}; background: {{o.bg}}; text-align: left; cursor: pointer">
+              <span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid {{o.ring}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex: none"><sc-if value="{{o.pressed}}" hint-placeholder-val="{{ false }}"><span style="width: 6px; height: 6px; border-radius: 50%; background: #6CB4EE"></span></sc-if></span>
+              <span style="font-size: 13px">{{o.text}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto">
+          <button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">Insert before</button>
+          <button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">Insert after</button>
+          <button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">Duplicate</button>
+          <button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B3A3A; background: transparent; color: #F2A7A0; cursor: pointer">Delete bar</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      measures: [
+        { num: 4, den: 4, grp: [1, 1, 1, 1], sec: 'A' },
+        { num: 4, den: 4, grp: [1, 1, 1, 1], sec: '' },
+        { num: 7, den: 8, grp: [2, 2, 3], sec: 'B' },
+        { num: 7, den: 8, grp: [2, 2, 3], sec: '' },
+        { num: 5, den: 8, grp: [3, 2], sec: '' },
+        { num: 6, den: 8, grp: [3, 3], sec: '' },
+        { num: 9, den: 8, grp: [2, 2, 2, 3], sec: '' },
+        { num: 4, den: 4, grp: [1, 1, 1, 1], sec: 'Fill' }
+      ],
+      sel: 2,
+      scope: 'until',
+      rel: 'unit',
+      overflow: 'next',
+      bpm: 120
+    };
+  }
+
+  comps(n) {
+    if (n === 0) return [[]];
+    var out = [];
+    if (n >= 2) this.comps(n - 2).forEach(function (c) { out.push([2].concat(c)); });
+    if (n >= 3) this.comps(n - 3).forEach(function (c) { out.push([3].concat(c)); });
+    return out;
+  }
+
+  ones(n) {
+    var a = [];
+    for (var i = 0; i < n; i++) a.push(1);
+    return a;
+  }
+
+  defaultGrp(num, den) {
+    if (den <= 4) return this.ones(num);
+    if (num % 3 === 0) {
+      var a = [];
+      for (var i = 0; i < num / 3; i++) a.push(3);
+      return a;
+    }
+    var c = this.comps(num);
+    return c.length ? c[0] : this.ones(num);
+  }
+
+  groupOptions(num, den, cur) {
+    var c = this.comps(num).sort(function (a, b) { return a.length - b.length; });
+    var opts = den <= 4 ? [this.ones(num)].concat(c) : (c.length ? c : [this.ones(num)]);
+    opts = opts.slice(0, 6);
+    var key = cur.join('+');
+    if (!opts.some(function (o) { return o.join('+') === key; })) {
+      if (opts.length < 6) opts.push(cur); else opts[5] = cur;
+    }
+    return opts;
+  }
+
+  key(m) {
+    return m.num + '/' + m.den + ':' + m.grp.join('+');
+  }
+
+  affected() {
+    var s = this.state;
+    var idx = [s.sel];
+    if (s.scope === 'until') {
+      var k = this.key(s.measures[s.sel]);
+      for (var i = s.sel + 1; i < s.measures.length; i++) {
+        if (this.key(s.measures[i]) === k) idx.push(i); else break;
+      }
+    }
+    return idx;
+  }
+
+  apply(change) {
+    var ms = this.state.measures.slice();
+    this.affected().forEach(function (i) { ms[i] = Object.assign({}, ms[i], change(ms[i])); });
+    this.setState({ measures: ms });
+  }
+
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var totalQ = 0;
+    var unitSym = { 2: '𝅗𝅥', 4: '♩', 8: '♪', 16: '♬' };
+    var unitWord = { 2: 'half notes', 4: 'quarter notes', 8: '8th notes', 16: '16th notes' };
+
+    var blocks = s.measures.map(function (m, i) {
+      totalQ += m.num * 4 / m.den;
+      var prev = s.measures[i - 1];
+      var changed = !prev || prev.num !== m.num || prev.den !== m.den;
+      var on = i === s.sel;
+      return {
+        flex: m.num * 16 / m.den,
+        label: String(i + 1),
+        num: String(m.num),
+        den: String(m.den),
+        meterColor: changed ? '#ECE9E2' : '#6B7280',
+        sec: m.sec,
+        hasSec: !!m.sec,
+        grpText: m.grp.join('+'),
+        aria: 'Bar ' + (i + 1) + ', ' + m.num + '/' + m.den + ', grouped ' + m.grp.join('+'),
+        pressed: on,
+        border: on ? '#6CB4EE' : '#2E333B',
+        bg: on ? '#1D2B39' : '#1F2329',
+        select: function () { self.setState({ sel: i }); },
+        groups: m.grp.map(function (g) {
+          var dots = [];
+          for (var k = 0; k < g; k++) dots.push({ big: k === 0, small: k !== 0 });
+          return { flex: g, dots: dots };
+        })
+      };
+    });
+
+    var m = s.measures[s.sel];
+    var curKey = m.grp.join('+');
+    var pill = function (on) { return { bg: on ? '#1D3347' : '#22262D', border: on ? '#6CB4EE' : '#2E333B' }; };
+
+    var dens = [2, 4, 8, 16].map(function (d) {
+      var p = pill(d === m.den);
+      return { text: String(d), pressed: d === m.den, bg: p.bg, border: p.border, pick: function () { self.apply(function (x) { return { den: d, grp: self.defaultGrp(x.num, d) }; }); } };
+    });
+
+    var presets = [[3, 4], [4, 4], [5, 4], [6, 8], [5, 8], [7, 8], [9, 8], [11, 8], [12, 8], [7, 16], [15, 16]].map(function (pr) {
+      var on = pr[0] === m.num && pr[1] === m.den;
+      var p = pill(on);
+      return { text: pr[0] + '/' + pr[1], pressed: on, bg: p.bg, border: p.border, pick: function () { self.apply(function () { return { num: pr[0], den: pr[1], grp: self.defaultGrp(pr[0], pr[1]) }; }); } };
+    });
+
+    var grpOpts = this.groupOptions(m.num, m.den, m.grp).map(function (g) {
+      var on = g.join('+') === curKey;
+      var p = pill(on);
+      return { text: g.join('+'), pressed: on, bg: p.bg, border: p.border, pick: function () { self.apply(function () { return { grp: g.slice() }; }); } };
+    });
+
+    var lens = m.grp.map(function (g, gi) {
+      var units = [];
+      for (var k = 0; k < g; k++) {
+        units.push({
+          count: String(k + 1),
+          sym: unitSym[m.den] || '♪',
+          border: k === 0 ? '#F2A541' : '#2E333B',
+          bg: k === 0 ? '#3A2F1C' : '#22262D',
+          color: k === 0 ? '#F2A541' : '#ECE9E2'
+        });
+      }
+      return { units: units, caption: 'Group ' + (gi + 1) + ' · ' + g + (unitSym[m.den] || '♪') };
+    });
+
+    var aff = this.affected();
+    var scopeNote = aff.length > 1
+      ? 'Edits bars ' + (aff[0] + 1) + '–' + (aff[aff.length - 1] + 1) + ' together, stopping at the next different meter.'
+      : 'Edits bar ' + (aff[0] + 1) + ' only.';
+
+    var seg = function (on) { return { bg: on ? '#2E333B' : 'transparent', color: on ? '#ECE9E2' : '#A9AEB8', weight: on ? '600' : '400' }; };
+    var scopes = [{ id: 'bar', text: 'This bar' }, { id: 'until', text: 'Until next change' }].map(function (o) {
+      var on = s.scope === o.id;
+      var st = seg(on);
+      return { text: o.text, pressed: on, bg: st.bg, color: st.color, weight: st.weight, pick: function () { self.setState({ scope: o.id }); } };
+    });
+
+    var radio = function (on) { return { bg: on ? '#1D2B39' : 'transparent', border: on ? '#6CB4EE' : '#2E333B', ring: on ? '#6CB4EE' : '#5A616C' }; };
+    var rels = [
+      { id: 'unit', text: '♪ = ♪', sub: 'The 8th note keeps its speed' },
+      { id: 'beat', text: '♩ = ♩.', sub: 'The felt beat keeps its speed' }
+    ].map(function (o) {
+      var on = s.rel === o.id;
+      var r = radio(on);
+      return { text: o.text, sub: o.sub, pressed: on, bg: r.bg, border: r.border, ring: r.ring, pick: function () { self.setState({ rel: o.id }); } };
+    });
+    var overflows = [
+      { id: 'next', text: 'Push overflow into the next bar' },
+      { id: 'trim', text: 'Trim notes past the new barline' }
+    ].map(function (o) {
+      var on = s.overflow === o.id;
+      var r = radio(on);
+      return { text: o.text, pressed: on, bg: r.bg, border: r.border, ring: r.ring, pick: function () { self.setState({ overflow: o.id }); } };
+    });
+
+    var secs = totalQ * 60 / s.bpm;
+    var meterCount = 0;
+    s.measures.forEach(function (x, i) {
+      var p = s.measures[i - 1];
+      if (!p || p.num !== x.num || p.den !== x.den) meterCount++;
+    });
+
+    return {
+      blocks: blocks,
+      summaryMain: s.measures.length + ' bars · ' + (Math.round(totalQ * 100) / 100) + ' ♩',
+      summarySub: meterCount + ' meter changes · ' + secs.toFixed(1) + ' s at ' + s.bpm + ' ♩/min',
+      selLabel: 'BAR ' + (s.sel + 1),
+      selNum: String(m.num),
+      selMeter: m.num + '/' + m.den,
+      numDown: function () { self.apply(function (x) { var n = Math.max(1, x.num - 1); return { num: n, grp: self.defaultGrp(n, x.den) }; }); },
+      numUp: function () { self.apply(function (x) { var n = Math.min(15, x.num + 1); return { num: n, grp: self.defaultGrp(n, x.den) }; }); },
+      dens: dens,
+      presets: presets,
+      unitLabel: m.num + ' ' + (unitWord[m.den] || 'notes').toUpperCase() + ' · ' + m.grp.length + (m.grp.length === 1 ? ' GROUP' : ' GROUPS'),
+      lens: lens,
+      grpOpts: grpOpts,
+      scopes: scopes,
+      scopeNote: scopeNote,
+      rels: rels,
+      overflows: overflows
+    };
+  }
+}
+</script>
+</body>
+</html>

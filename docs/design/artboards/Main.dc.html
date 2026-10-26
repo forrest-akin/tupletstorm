@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Groove editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121417}
+a{color:#8CC6F3}a:hover{color:#B9DDF8}
+button{font:inherit;color:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #6CB4EE;outline-offset:2px}
+kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 6px;border-radius:4px;background:#2A2E36;border:1px solid #3A3F48;color:#ECE9E2;white-space:nowrap}
+</style>
+</helmet>
+<div style="min-height: 940px; background: #121417; color: #ECE9E2; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.4">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 24px; border-bottom: 1px solid #262A31">
+    <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 320px">
+      <div style="width: 36px; height: 36px; border-radius: 9px; background: #F2A541; color: #1A1406; display: flex; align-items: center; justify-content: center; flex: none">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="11" rx="8" ry="3"></ellipse><path d="M4 11v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5"></path><path d="M14 5l6-3M10 5L4 2"></path></svg>
+      </div>
+      <div style="min-width: 0">
+        <div style="font-size: 12px; color: #8A909B">My grooves /</div>
+        <h1 style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Untitled groove</h1>
+      </div>
+      <span style="font-size: 12px; color: #8A909B; padding: 2px 8px; border: 1px solid #2E333B; border-radius: 999px; white-space: nowrap">Saved</span>
+    </div>
+    <div role="group" aria-label="View" style="display: flex; padding: 3px; background: #1A1D22; border: 1px solid #2E333B; border-radius: 10px">
+      <button type="button" aria-pressed="true" style="height: 36px; padding: 0 14px; border: 0; border-radius: 7px; background: #2E333B; color: #ECE9E2; font-weight: 600; cursor: pointer">Edit</button>
+      <button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: #A9AEB8; cursor: pointer">Practice</button>
+      <button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; color: #A9AEB8; cursor: pointer">Print</button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <button type="button" aria-label="Undo" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid #2E333B; background: transparent; color: #A9AEB8; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg>
+      </button>
+      <button type="button" aria-label="Redo" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid #2E333B; background: transparent; color: #A9AEB8; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"></path><path d="M20 9H9a5 5 0 0 0 0 10h3"></path></svg>
+      </button>
+      <button type="button" style="height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; color: #ECE9E2; cursor: pointer">Export</button>
+      <button type="button" style="height: 40px; padding: 0 16px; border-radius: 8px; border: 0; background: #ECE9E2; color: #121417; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="M12 3v12M7 8l5-5 5 5"></path></svg>
+        Share link
+      </button>
+    </div>
+  </header>
+
+  <div role="toolbar" aria-label="Transport" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px 24px; border-bottom: 1px solid #262A31; background: #16191D">
+    <button type="button" onClick="{{togglePlay}}" aria-label="{{playLabel}}" style="width: 48px; height: 48px; border-radius: 50%; border: 0; background: #F2A541; color: #1A1406; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex: none">
+      <sc-if value="{{showPlay}}" hint-placeholder-val="{{ true }}"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg></sc-if>
+      <sc-if value="{{playing}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg></sc-if>
+    </button>
+    <button type="button" onClick="{{stop}}" aria-label="Stop and return to start" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #3A3F48; background: transparent; color: #ECE9E2; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex: none">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+    </button>
+    <div aria-hidden="true" style="width: 1px; height: 28px; background: #2E333B"></div>
+    <button type="button" onClick="{{toggleLoop}}" aria-pressed="{{loop}}" style="height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid {{loopBorder}}; background: {{loopBg}}; display: flex; align-items: center; gap: 8px; cursor: pointer">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"></path><path d="M3 11V9a3 3 0 0 1 3-3h15"></path><path d="M7 22l-4-4 4-4"></path><path d="M21 13v2a3 3 0 0 1-3 3H3"></path></svg>
+      Loop
+    </button>
+    <button type="button" onClick="{{toggleClick}}" aria-pressed="{{click}}" style="height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid {{clickBorder}}; background: {{clickBg}}; display: flex; align-items: center; gap: 8px; cursor: pointer">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l3 18H5z"></path><path d="M12 16l5-9"></path></svg>
+      Click
+    </button>
+    <button type="button" onClick="{{toggleCount}}" aria-pressed="{{countIn}}" style="height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid {{countBorder}}; background: {{countBg}}; cursor: pointer">Count-in</button>
+    <div aria-hidden="true" style="width: 1px; height: 28px; background: #2E333B"></div>
+    <div role="group" aria-label="Tempo" style="display: flex; align-items: center; height: 40px; border: 1px solid #3A3F48; border-radius: 8px">
+      <button type="button" onClick="{{slower}}" aria-label="Slower" style="width: 40px; height: 38px; border: 0; background: transparent; color: #ECE9E2; font-size: 18px; cursor: pointer; padding: 0">−</button>
+      <div style="padding: 0 8px; min-width: 72px; text-align: center; border-left: 1px solid #2E333B; border-right: 1px solid #2E333B; height: 38px; display: flex; align-items: center; justify-content: center; gap: 4px">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600">{{bpm}}</span>
+        <span style="font-size: 11px; color: #8A909B">♩/min</span>
+      </div>
+      <button type="button" onClick="{{faster}}" aria-label="Faster" style="width: 40px; height: 38px; border: 0; background: transparent; color: #ECE9E2; font-size: 18px; cursor: pointer; padding: 0">+</button>
+    </div>
+    <button type="button" style="height: 40px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">Tap</button>
+    <div style="flex: 1 1 24px"></div>
+    <div style="text-align: right; min-width: 160px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: #F2A541">{{posText}}</div>
+      <div style="font-size: 12px; color: #8A909B">{{lengthText}}</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 24px 24px; align-items: flex-start">
+
+    <section aria-label="Groove editor" style="flex: 999 1 720px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; overflow: hidden">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid #262A31">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #A9AEB8">Bars 1–2</h2>
+        <div style="flex: 1 1 16px"></div>
+        <button type="button" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; background: transparent; cursor: pointer">+ Bar</button>
+        <a href="Meter.dc.html" style="height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A3F48; display: inline-flex; align-items: center; text-decoration: none; color: #ECE9E2">Meter change</a>
+        <div role="group" aria-label="Zoom" style="display: flex; align-items: center; border: 1px solid #3A3F48; border-radius: 8px; height: 36px">
+          <button type="button" aria-label="Zoom out" style="width: 36px; height: 34px; border: 0; background: transparent; cursor: pointer; padding: 0">−</button>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #A9AEB8; padding: 0 6px">100%</span>
+          <button type="button" aria-label="Zoom in" style="width: 36px; height: 34px; border: 0; background: transparent; cursor: pointer; padding: 0">+</button>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto">
+        <div style="min-width: 980px">
+
+          <div style="display: flex; height: 40px; border-bottom: 1px solid #262A31">
+            <div style="width: 148px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">Bar</div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; position: relative">
+              <sc-for list="{{measures}}" as="m" hint-placeholder-count="2">
+                <div style="flex: {{m.flex}} 1 0px; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 10px; box-shadow: inset 1px 0 0 #5A616C">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A909B">{{m.num}}</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: #2A2E36">{{m.meter}}</span>
+                  <sc-if value="{{m.hasGroup}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #A9AEB8; white-space: nowrap">{{m.group}}</span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; border-bottom: 1px solid #262A31">
+            <div style="width: 148px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; gap: 10px; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">
+              <svg aria-hidden="true" width="10" height="20" viewBox="0 0 10 20"><rect x="1" y="4" width="3" height="12" fill="#A9AEB8"></rect><rect x="6" y="4" width="3" height="12" fill="#A9AEB8"></rect></svg>
+              Notation
+            </div>
+            <div style="flex: 1 1 0px; min-width: 0; position: relative; background: #F3EFE6; padding: 8px 0 4px">
+              <svg role="img" aria-label="Drum notation. Bar 1 in 4/4: hi-hat eighths, kick on 1 and the and of 1, snare on 2 with a ghost note, kick on 3 and its e, accented sextuplet fill on beat 4 moving snare to high tom to floor tom. Bar 2 in 7/8 grouped 2+2+3: crash and kick, snare on 3 and 7, kicks on 5 and 6." viewBox="0 0 750 80" style="display: block; width: 100%; height: auto">
+                <path d="M0 40H750M0 48H750M0 56H750M0 64H750M0 72H750" stroke="#17181B" stroke-width="1"></path>
+                <path d="M400 40V72M749.4 40V72" stroke="#17181B" stroke-width="1.4"></path>
+                <path d="M404 32H421" stroke="#17181B" stroke-width="1"></path>
+                <path d="M16.5 68V18M66.5 68V18M116.5 52V18M166.5 36V18M191.5 52V18M216.5 68V18M241.5 68V18M266.5 36V18M312.33 52V18M329 52V18M345.67 52V18M362.33 44V18M379 44V18M395.67 60V18M416.5 68V18M466.5 36V18M516.5 52V18M566.5 36V18M616.5 68V18M666.5 68V18M716.5 52V18" stroke="#17181B" stroke-width="1.2"></path>
+                <g fill="#17181B">
+                  <rect x="15.9" y="18" width="51.2" height="4"></rect>
+                  <rect x="115.9" y="18" width="76.2" height="4"></rect>
+                  <rect x="165.9" y="25" width="26.2" height="4"></rect>
+                  <rect x="215.9" y="18" width="51.2" height="4"></rect>
+                  <rect x="215.9" y="25" width="26.2" height="4"></rect>
+                  <rect x="311.73" y="18" width="84.54" height="4"></rect>
+                  <rect x="311.73" y="25" width="84.54" height="4"></rect>
+                  <rect x="415.9" y="18" width="51.2" height="4"></rect>
+                  <rect x="515.9" y="18" width="51.2" height="4"></rect>
+                  <rect x="615.9" y="18" width="101.2" height="4"></rect>
+                  <ellipse cx="112.5" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 112.5 52)"></ellipse>
+                  <ellipse cx="187.5" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 187.5 52)"></ellipse>
+                  <ellipse cx="308.33" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 308.33 52)"></ellipse>
+                  <ellipse cx="325" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 325 52)"></ellipse>
+                  <ellipse cx="341.67" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 341.67 52)"></ellipse>
+                  <ellipse cx="512.5" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 512.5 52)"></ellipse>
+                  <ellipse cx="712.5" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 712.5 52)"></ellipse>
+                  <ellipse cx="358.33" cy="44" rx="4.6" ry="3.4" transform="rotate(-20 358.33 44)"></ellipse>
+                  <ellipse cx="375" cy="44" rx="4.6" ry="3.4" transform="rotate(-20 375 44)"></ellipse>
+                  <ellipse cx="391.67" cy="60" rx="4.6" ry="3.4" transform="rotate(-20 391.67 60)"></ellipse>
+                  <ellipse cx="12.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 12.5 68)"></ellipse>
+                  <ellipse cx="62.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 62.5 68)"></ellipse>
+                  <ellipse cx="212.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 212.5 68)"></ellipse>
+                  <ellipse cx="237.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 237.5 68)"></ellipse>
+                  <ellipse cx="412.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 412.5 68)"></ellipse>
+                  <ellipse cx="612.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 612.5 68)"></ellipse>
+                  <ellipse cx="662.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 662.5 68)"></ellipse>
+                  <text x="354" y="13.5" font-family="'IBM Plex Sans', sans-serif" font-size="10" font-style="italic" font-weight="700" text-anchor="middle">6</text>
+                </g>
+                <path d="M9.1 32.6L15.9 39.4M9.1 39.4L15.9 32.6M59.1 32.6L65.9 39.4M59.1 39.4L65.9 32.6M109.1 32.6L115.9 39.4M109.1 39.4L115.9 32.6M159.1 32.6L165.9 39.4M159.1 39.4L165.9 32.6M209.1 32.6L215.9 39.4M209.1 39.4L215.9 32.6M259.1 32.6L265.9 39.4M259.1 39.4L265.9 32.6M459.1 32.6L465.9 39.4M459.1 39.4L465.9 32.6M509.1 32.6L515.9 39.4M509.1 39.4L515.9 32.6M559.1 32.6L565.9 39.4M559.1 39.4L565.9 32.6M609.1 32.6L615.9 39.4M609.1 39.4L615.9 32.6M659.1 32.6L665.9 39.4M659.1 39.4L665.9 32.6M709.1 32.6L715.9 39.4M709.1 39.4L715.9 32.6M409.1 28.6L415.9 35.4M409.1 35.4L415.9 28.6" stroke="#17181B" stroke-width="1.4" stroke-linecap="round"></path>
+                <path d="M180.5 47.5Q177.5 52 180.5 56.5M194.5 47.5Q197.5 52 194.5 56.5" stroke="#17181B" stroke-width="1.2" fill="none"></path>
+                <path d="M304.3 8.5L312.3 11.5L304.3 14.5" stroke="#17181B" stroke-width="1.3" fill="none" stroke-linejoin="round"></path>
+              </svg>
+              <sc-if value="{{live}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; top: 0; bottom: 0; left: {{playPct}}%; width: 2px; margin-left: -1px; background: #D9800B; pointer-events: none"></div></sc-if>
+            </div>
+          </div>
+
+          <div style="display: flex; height: 56px; border-bottom: 1px solid #262A31">
+            <div style="width: 148px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">Subdivision</div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; position: relative">
+              <sc-for list="{{beatHeads}}" as="b" hint-placeholder-count="7">
+                <div style="flex: {{b.flex}} 1 0px; min-width: 0; padding: 6px 3px; box-shadow: inset 1px 0 0 {{b.sep}}; display: flex">
+                  <button type="button" onClick="{{b.select}}" aria-pressed="{{b.pressed}}" style="flex: 1 1 0px; min-width: 0; border-radius: 8px; border: 1px solid {{b.border}}; background: {{b.bg}}; padding: 3px 8px; text-align: left; cursor: pointer; display: flex; flex-direction: column; justify-content: center; gap: 1px; overflow: hidden">
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8A909B; white-space: nowrap">{{b.title}}</span>
+                    <span style="font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{b.label}} <sc-if value="{{b.hasRatio}}" hint-placeholder-val="{{ false }}"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: #8CC6F3">{{b.ratio}}</span></sc-if></span>
+                  </button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; height: 26px; border-bottom: 1px solid #262A31">
+            <div style="width: 148px; flex: none; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; border-right: 1px solid #262A31; font-size: 12px; color: #A9AEB8">Count</div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; position: relative">
+              <sc-for list="{{counts}}" as="c" hint-placeholder-count="7">
+                <div style="flex: {{c.flex}} 1 0px; min-width: 0; display: flex; box-shadow: inset 1px 0 0 {{c.sep}}">
+                  <sc-for list="{{c.cells}}" as="k" hint-placeholder-count="4">
+                    <div style="flex: 1 1 0px; min-width: 0; display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{k.color}}; font-weight: {{k.weight}}; overflow: hidden">{{k.text}}</div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <sc-if value="{{live}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; top: 0; bottom: 0; left: {{playPct}}%; width: 2px; margin-left: -1px; background: #F2A541; pointer-events: none"></div></sc-if>
+            </div>
+          </div>
+
+          <sc-for list="{{lanes}}" as="lane" hint-placeholder-count="6">
+            <div style="display: flex; height: 44px; border-bottom: 1px solid #262A31">
+              <div style="width: 148px; flex: none; box-sizing: border-box; padding: 0 8px 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-right: 1px solid #262A31">
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: #ECE9E2; opacity: {{lane.rowOpacity}}; white-space: nowrap">
+                  <sc-if value="{{lane.glyphX}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="#F2A541" stroke-width="2" stroke-linecap="round"></path></svg></sc-if>
+                  <sc-if value="{{lane.glyphDot}}" hint-placeholder-val="{{ true }}"><span style="width: 9px; height: 9px; border-radius: 50%; background: #F2A541"></span></sc-if>
+                  {{lane.name}}
+                </span>
+                <button type="button" onClick="{{lane.toggleMute}}" aria-pressed="{{lane.muted}}" aria-label="{{lane.muteLabel}}" style="width: 30px; height: 30px; border-radius: 6px; border: 1px solid #3A3F48; background: {{lane.muteBg}}; color: {{lane.muteColor}}; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; flex: none">M</button>
+              </div>
+              <div style="flex: 1 1 0px; min-width: 0; display: flex; position: relative; opacity: {{lane.rowOpacity}}">
+                <sc-for list="{{lane.beats}}" as="b" hint-placeholder-count="7">
+                  <div style="flex: {{b.flex}} 1 0px; min-width: 0; display: flex; box-shadow: inset 1px 0 0 {{b.sep}}; background: {{b.bg}}">
+                    <sc-for list="{{b.cells}}" as="cell" hint-placeholder-count="4">
+                      <div style="flex: 1 1 0px; min-width: 0; padding: 4px 1px; display: flex">
+                        <button type="button" onClick="{{cell.toggle}}" aria-pressed="{{cell.pressed}}" aria-label="{{cell.label}}" style="flex: 1 1 0px; min-width: 0; border: 0; border-radius: 5px; background: {{cell.bg}}; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center">
+                          <sc-if value="{{cell.dot}}" hint-placeholder-val="{{ false }}"><span style="width: 12px; height: 12px; border-radius: 50%; background: #F2A541"></span></sc-if>
+                          <sc-if value="{{cell.x}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="#F2A541" stroke-width="2.4" stroke-linecap="round"></path></svg></sc-if>
+                          <sc-if value="{{cell.accDot}}" hint-placeholder-val="{{ false }}"><span style="width: 18px; height: 18px; border-radius: 50%; background: #FFC66E; color: #1A1406; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1">&gt;</span></sc-if>
+                          <sc-if value="{{cell.accX}}" hint-placeholder-val="{{ false }}"><span style="width: 18px; height: 18px; border-radius: 50%; border: 2px solid #FFC66E; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="9" height="9" viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="#FFC66E" stroke-width="2.4" stroke-linecap="round"></path></svg></span></sc-if>
+                          <sc-if value="{{cell.ghost}}" hint-placeholder-val="{{ false }}"><span style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid #F2A541"></span></sc-if>
+                        </button>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+                <sc-if value="{{lane.live}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; top: 0; bottom: 0; left: {{lane.playPct}}%; width: 2px; margin-left: -1px; background: #F2A541; pointer-events: none"></div></sc-if>
+              </div>
+            </div>
+          </sc-for>
+
+          <div style="display: flex; height: 52px">
+            <div style="width: 148px; flex: none; box-sizing: border-box; padding: 0 12px 0 12px; display: flex; align-items: center; border-right: 1px solid #262A31">
+              <button type="button" style="height: 36px; padding: 0 10px; border-radius: 8px; border: 1px dashed #3A3F48; background: transparent; color: #A9AEB8; cursor: pointer; white-space: nowrap">+ Instrument</button>
+            </div>
+            <div style="flex: 1 1 0px; min-width: 0; display: flex; align-items: center; gap: 16px; padding: 0 16px; font-size: 12px; color: #8A909B; flex-wrap: wrap">
+              <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 50%; background: #F2A541"></span>Hit</span>
+              <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; border-radius: 50%; background: #FFC66E; color: #1A1406; font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center">&gt;</span>Accent</span>
+              <span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 50%; border: 2px solid #F2A541"></span>Ghost</span>
+              <span>Click a cell to cycle; right-click for flam, drag, open hat</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <aside aria-label="Inspector" style="flex: 1 1 300px; min-width: 0; background: #1A1D22; border: 1px solid #262A31; border-radius: 12px; overflow: hidden">
+      <div style="padding: 16px; border-bottom: 1px solid #262A31">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #8A909B">SELECTED</div>
+        <h2 style="margin: 4px 0 0; font-size: 18px; font-weight: 600">{{selTitle}}</h2>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #A9AEB8">{{selDur}}</p>
+      </div>
+
+      <div style="padding: 16px; border-bottom: 1px solid #262A31; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px">
+          <h3 style="margin: 0; font-size: 13px; font-weight: 600">Subdivision</h3>
+          <span style="font-size: 12px; color: #8A909B">all lanes</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+          <sc-for list="{{subOpts}}" as="o" hint-placeholder-count="7">
+            <button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="min-height: 56px; min-width: 0; border-radius: 8px; border: 1px solid {{o.border}}; background: {{o.bg}}; padding: 6px 8px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600">{{o.n}}</span>
+              <span style="font-size: 11px; color: #A9AEB8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{o.name}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <p style="margin: 0; font-size: 12px; color: #8A909B">{{subNote}}</p>
+        <a href="Subdivision.dc.html" style="font-size: 13px; text-decoration: none">Give one lane its own subdivision →</a>
+      </div>
+
+      <div style="padding: 16px; border-bottom: 1px solid #262A31; display: flex; flex-direction: column; gap: 10px">
+        <h3 style="margin: 0; font-size: 13px; font-weight: 600">Bar {{selBar}}</h3>
+        <div style="display: flex; align-items: center; gap: 14px">
+          <div aria-hidden="true" style="display: flex; flex-direction: column; align-items: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 22px; line-height: 1; padding: 6px 10px; border-radius: 8px; background: #2A2E36">
+            <span>{{selNum}}</span>
+            <span style="width: 18px; height: 2px; background: #5A616C; margin: 3px 0"></span>
+            <span>{{selDen}}</span>
+          </div>
+          <div>
+            <div style="font-size: 13px">{{selMeterText}}</div>
+            <div style="font-size: 12px; color: #8A909B">{{selGroupText}}</div>
+          </div>
+        </div>
+        <a href="Meter.dc.html" style="font-size: 13px; text-decoration: none">Change meter or grouping →</a>
+      </div>
+
+      <div style="padding: 16px; border-bottom: 1px solid #262A31; display: flex; flex-direction: column; gap: 8px">
+        <h3 style="margin: 0; font-size: 13px; font-weight: 600">Tuplets</h3>
+        <p style="margin: 0; font-size: 13px; color: #A9AEB8">{{tupletText}}</p>
+        <a href="Tuplets.dc.html" style="font-size: 13px; text-decoration: none">Open the tuplet editor →</a>
+      </div>
+
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px">
+        <h3 style="margin: 0; font-size: 13px; font-weight: 600">Keys</h3>
+        <div style="display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 12px; align-items: center; font-size: 12px; color: #A9AEB8">
+          <kbd>Space</kbd><span>Play / pause</span>
+          <kbd>2 – 9</kbd><span>Subdivide the selected beat</span>
+          <kbd>T</kbd><span>Wrap selected notes in a tuplet</span>
+          <kbd>M</kbd><span>Meter change at this bar</span>
+          <kbd>← →</kbd><span>Previous / next beat</span>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.lanes = [
+      { id: 'cr', name: 'Crash', x: true, states: 3 },
+      { id: 'hh', name: 'Hi-hat', x: true, states: 3 },
+      { id: 'sn', name: 'Snare', x: false, states: 4 },
+      { id: 'ht', name: 'High tom', x: false, states: 3 },
+      { id: 'ft', name: 'Floor tom', x: false, states: 3 },
+      { id: 'kk', name: 'Kick', x: false, states: 3 }
+    ];
+    var init = {
+      cr: { b4: '1000' },
+      hh: { b0: '1010', b1: '1010', b2: '1010', b4: '0010', b5: '1010', b6: '101010' },
+      sn: { b1: '1003', b3: '211000', b5: '1000', b6: '000010' },
+      ht: { b3: '000110' },
+      ft: { b3: '000001' },
+      kk: { b0: '1010', b2: '1100', b4: '1000', b6: '101000' }
+    };
+    var beats = [
+      { id: 'b0', m: 1, dur: 1, sub: 4, n: 1 },
+      { id: 'b1', m: 1, dur: 1, sub: 4, n: 2 },
+      { id: 'b2', m: 1, dur: 1, sub: 4, n: 3 },
+      { id: 'b3', m: 1, dur: 1, sub: 6, n: 4 },
+      { id: 'b4', m: 2, dur: 1, sub: 4, n: 1, eighth: 1 },
+      { id: 'b5', m: 2, dur: 1, sub: 4, n: 2, eighth: 3 },
+      { id: 'b6', m: 2, dur: 1.5, sub: 6, n: 3, eighth: 5 }
+    ];
+    var notes = {};
+    this.lanes.forEach(function (lane) {
+      notes[lane.id] = {};
+      beats.forEach(function (b) {
+        var s = (init[lane.id] && init[lane.id][b.id]) || '';
+        var arr = [];
+        for (var i = 0; i < b.sub; i++) arr.push(Number(s.charAt(i) || 0));
+        notes[lane.id][b.id] = arr;
+      });
+    });
+    this.state = { beats: beats, notes: notes, sel: 'b3', playing: false, t: 0, bpm: 96, loop: true, click: true, countIn: false, muted: {} };
+  }
+
+  componentWillUnmount() {
+    if (this.timer) clearInterval(this.timer);
+  }
+
+  total(beats) {
+    var x = 0;
+    beats.forEach(function (b) { x += b.dur; });
+    return x;
+  }
+
+  togglePlay() {
+    var self = this;
+    if (this.state.playing) {
+      clearInterval(this.timer);
+      this.timer = null;
+      this.setState({ playing: false });
+      return;
+    }
+    this.last = Date.now();
+    this.timer = setInterval(function () { self.tick(); }, 33);
+    this.setState({ playing: true });
+  }
+
+  tick() {
+    var now = Date.now();
+    var dt = (now - this.last) / 1000;
+    this.last = now;
+    var total = this.total(this.state.beats);
+    var t = this.state.t + dt * this.state.bpm / 60;
+    if (t >= total) {
+      if (this.state.loop) {
+        t = t % total;
+      } else {
+        clearInterval(this.timer);
+        this.timer = null;
+        this.setState({ t: 0, playing: false });
+        return;
+      }
+    }
+    this.setState({ t: t });
+  }
+
+  stop() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    this.setState({ playing: false, t: 0 });
+  }
+
+  toggle(laneId, beatId, i) {
+    var lane = this.lanes.find(function (l) { return l.id === laneId; });
+    var notes = Object.assign({}, this.state.notes);
+    var ln = Object.assign({}, notes[laneId]);
+    var arr = ln[beatId].slice();
+    arr[i] = (arr[i] + 1) % lane.states;
+    ln[beatId] = arr;
+    notes[laneId] = ln;
+    this.setState({ notes: notes });
+  }
+
+  setSub(id, n) {
+    var s = this.state;
+    var old = 0;
+    var beats = s.beats.map(function (b) {
+      if (b.id === id) { old = b.sub; return Object.assign({}, b, { sub: n }); }
+      return b;
+    });
+    if (old === n) return;
+    var notes = {};
+    this.lanes.forEach(function (lane) {
+      var ln = Object.assign({}, s.notes[lane.id]);
+      var prev = ln[id] || [];
+      var next = [];
+      for (var j = 0; j < n; j++) next.push(0);
+      prev.forEach(function (v, i) {
+        if (!v) return;
+        var k = Math.round(i * n / old);
+        if (k < n) next[k] = Math.max(next[k], v);
+      });
+      ln[id] = next;
+      notes[lane.id] = ln;
+    });
+    this.setState({ beats: beats, notes: notes });
+  }
+
+  subInfo(dur, n) {
+    if (dur === 1) {
+      var a = { 2: ['8ths', ''], 3: ['Triplets', '3:2'], 4: ['16ths', ''], 5: ['Quintuplets', '5:4'], 6: ['Sextuplets', '6:4'], 7: ['Septuplets', '7:4'], 8: ['32nds', ''] };
+      return a[n] || [n + ' notes', n + ':4'];
+    }
+    var b = { 2: ['Duplets', '2:3'], 3: ['8ths', ''], 4: ['Quadruplets', '4:3'], 5: ['Quintuplets', '5:6'], 6: ['16ths', ''], 9: ['16th triplets', '9:6'] };
+    return b[n] || [n + ' notes', n + ':6'];
+  }
+
+  subOptions(dur) {
+    return dur === 1 ? [2, 3, 4, 5, 6, 7, 8] : [2, 3, 4, 5, 6, 9];
+  }
+
+  countLabels(b) {
+    var out = [];
+    if (b.eighth) {
+      var per = b.sub / (b.dur * 2);
+      for (var i = 0; i < b.sub; i++) {
+        if (per === Math.floor(per) && i % per === 0) out.push(String(b.eighth + i / per));
+        else if (per === 2) out.push('+');
+        else out.push(i === 0 ? String(b.eighth) : '·');
+      }
+      return out;
+    }
+    var named = { 2: ['&'], 3: ['trip', 'let'], 4: ['e', '&', 'a'], 6: ['la', 'li', '&', 'la', 'li'] };
+    out.push(String(b.n));
+    for (var j = 1; j < b.sub; j++) out.push(named[b.sub] ? named[b.sub][j - 1] : '·');
+    return out;
+  }
+
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var total = this.total(s.beats);
+    var starts = {};
+    var acc = 0;
+    s.beats.forEach(function (b) { starts[b.id] = acc; acc += b.dur; });
+    var live = s.playing || s.t > 0;
+    var playPct = (s.t / total * 100).toFixed(3);
+    var sepFor = function (b, i) { return (i === 0 || s.beats[i - 1].m !== b.m) ? '#5A616C' : '#2E333B'; };
+
+    var groups = [];
+    s.beats.forEach(function (b) {
+      var last = groups[groups.length - 1];
+      if (!last || last.m !== b.m) { last = { m: b.m, flex: 0 }; groups.push(last); }
+      last.flex += b.dur * 2;
+    });
+    var measures = groups.map(function (g) {
+      return g.m === 1
+        ? { num: '1', meter: '4/4', group: '', hasGroup: false, flex: g.flex }
+        : { num: '2', meter: '7/8', group: 'grouped 2+2+3', hasGroup: true, flex: g.flex };
+    });
+
+    var beatHeads = s.beats.map(function (b, i) {
+      var info = self.subInfo(b.dur, b.sub);
+      var on = b.id === s.sel;
+      return {
+        flex: b.dur * 2,
+        sep: sepFor(b, i),
+        title: b.eighth ? 'Group ' + b.n + ' (' + (b.dur * 2) + '♪)' : 'Beat ' + b.n,
+        label: info[0],
+        ratio: info[1],
+        hasRatio: !!info[1],
+        pressed: on,
+        bg: on ? '#1D3347' : '#1F2329',
+        border: on ? '#6CB4EE' : '#2E333B',
+        select: function () { self.setState({ sel: b.id }); }
+      };
+    });
+
+    var counts = s.beats.map(function (b, i) {
+      return {
+        flex: b.dur * 2,
+        sep: sepFor(b, i),
+        cells: self.countLabels(b).map(function (l) {
+          var strong = /^\d+$/.test(l);
+          return { text: l, color: strong ? '#ECE9E2' : '#8A909B', weight: strong ? '600' : '500' };
+        })
+      };
+    });
+
+    var stateNames = ['off', 'hit', 'accent', 'ghost note'];
+    var lanes = this.lanes.map(function (lane) {
+      var muted = !!s.muted[lane.id];
+      return {
+        name: lane.name,
+        live: live,
+        playPct: playPct,
+        glyphX: lane.x,
+        glyphDot: !lane.x,
+        muted: muted,
+        muteLabel: (muted ? 'Unmute ' : 'Mute ') + lane.name,
+        muteBg: muted ? '#F2A541' : 'transparent',
+        muteColor: muted ? '#1A1406' : '#A9AEB8',
+        rowOpacity: muted ? '0.4' : '1',
+        toggleMute: function () {
+          var m = Object.assign({}, self.state.muted);
+          m[lane.id] = !m[lane.id];
+          self.setState({ muted: m });
+        },
+        beats: s.beats.map(function (b, bi) {
+          var arr = s.notes[lane.id][b.id];
+          var st = starts[b.id];
+          var selB = b.id === s.sel;
+          return {
+            flex: b.dur * 2,
+            sep: sepFor(b, bi),
+            bg: selB ? 'rgba(108,180,238,0.07)' : 'transparent',
+            cells: arr.map(function (v, i) {
+              var cs = st + i * b.dur / b.sub;
+              var ce = cs + b.dur / b.sub;
+              var now = live && s.t >= cs && s.t < ce;
+              return {
+                toggle: function () { self.toggle(lane.id, b.id, i); },
+                label: lane.name + ', bar ' + b.m + ', ' + (b.eighth ? 'group ' : 'beat ') + b.n + ', note ' + (i + 1) + ' of ' + b.sub + ': ' + stateNames[v],
+                pressed: v > 0,
+                bg: now ? (v ? '#5C4521' : '#302C23') : (i === 0 ? '#2A2E36' : '#22262D'),
+                dot: v === 1 && !lane.x,
+                x: v === 1 && lane.x,
+                accDot: v === 2 && !lane.x,
+                accX: v === 2 && lane.x,
+                ghost: v === 3
+              };
+            })
+          };
+        })
+      };
+    });
+
+    var pos = 'Bar 1 · Beat 1';
+    s.beats.forEach(function (b) {
+      var st = starts[b.id];
+      if (s.t >= st && s.t < st + b.dur) {
+        pos = b.eighth
+          ? 'Bar ' + b.m + ' · 8th ' + (b.eighth + Math.floor((s.t - st) * 2))
+          : 'Bar ' + b.m + ' · Beat ' + b.n;
+      }
+    });
+    var secs = total * 60 / s.bpm;
+
+    var sb = s.beats.find(function (b) { return b.id === s.sel; }) || s.beats[0];
+    var sInfo = this.subInfo(sb.dur, sb.sub);
+    var subOpts = this.subOptions(sb.dur).map(function (n) {
+      var inf = self.subInfo(sb.dur, n);
+      var on = n === sb.sub;
+      return {
+        n: String(n),
+        name: inf[0],
+        pressed: on,
+        bg: on ? '#1D3347' : '#22262D',
+        border: on ? '#6CB4EE' : '#2E333B',
+        pick: function () { self.setSub(sb.id, n); }
+      };
+    });
+    var natural = sb.dur === 1 ? 'the beat' : 'the dotted quarter';
+    var subNote = sInfo[1]
+      ? sb.sub + ' notes in the time of ' + sInfo[1].split(':')[1] + '. Notes already in this beat snap to the nearest new slot.'
+      : 'An even split of ' + natural + '. Notes already in this beat snap to the nearest new slot.';
+    var tupletText = sInfo[1]
+      ? 'This beat is a ' + sInfo[1] + ' ' + sInfo[0].toLowerCase().replace(/s$/, '') + '. Any of its notes can hold another tuplet.'
+      : 'No tuplets here. Select notes across beats and press T to wrap them, or Shift+T to nest inside an existing one.';
+
+    var tog = function (on) { return { bg: on ? '#22374A' : 'transparent', border: on ? '#6CB4EE' : '#3A3F48' }; };
+    var lp = tog(s.loop), cl = tog(s.click), ci = tog(s.countIn);
+
+    return {
+      measures: measures,
+      beatHeads: beatHeads,
+      counts: counts,
+      lanes: lanes,
+      live: live,
+      playPct: playPct,
+      playing: s.playing,
+      showPlay: !s.playing,
+      playLabel: s.playing ? 'Pause' : 'Play',
+      togglePlay: function () { self.togglePlay(); },
+      stop: function () { self.stop(); },
+      loop: s.loop, loopBg: lp.bg, loopBorder: lp.border,
+      click: s.click, clickBg: cl.bg, clickBorder: cl.border,
+      countIn: s.countIn, countBg: ci.bg, countBorder: ci.border,
+      toggleLoop: function () { self.setState({ loop: !self.state.loop }); },
+      toggleClick: function () { self.setState({ click: !self.state.click }); },
+      toggleCount: function () { self.setState({ countIn: !self.state.countIn }); },
+      bpm: s.bpm,
+      slower: function () { self.setState({ bpm: Math.max(30, self.state.bpm - 2) }); },
+      faster: function () { self.setState({ bpm: Math.min(300, self.state.bpm + 2) }); },
+      posText: pos,
+      lengthText: '2 bars · ' + secs.toFixed(1) + ' s per loop',
+      selTitle: sb.eighth ? 'Group ' + sb.n + ' of bar ' + sb.m : 'Beat ' + sb.n + ' of bar ' + sb.m,
+      selDur: sb.dur === 1 ? 'One quarter note long · ' + sInfo[0].toLowerCase() : 'Dotted quarter (three 8ths) · ' + sInfo[0].toLowerCase(),
+      subOpts: subOpts,
+      subNote: subNote,
+      selBar: String(sb.m),
+      selNum: sb.m === 1 ? '4' : '7',
+      selDen: sb.m === 1 ? '4' : '8',
+      selMeterText: sb.m === 1 ? '4/4 · four quarter-note beats' : '7/8 · three beat groups',
+      selGroupText: sb.m === 1 ? 'Click accents beat 1' : 'Grouped 2+2+3 eighths; click accents each group',
+      tupletText: tupletText
+    };
+  }
+}
+</script>
+</body>
+</html>

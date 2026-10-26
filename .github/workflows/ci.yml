@@ -1,0 +1,16 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  fixture:
+    name: Conformance fixture matches the reference
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v5
+      - run: node tools/gen-conformance.mjs
+      - run: git diff --exit-code crates/rhythm-tree/tests/fixtures/conformance.json

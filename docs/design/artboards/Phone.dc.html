@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice player</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#121417}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid #6CB4EE;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; overflow: hidden; background: #121417; color: #ECE9E2; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.4; padding: 12px 16px 20px; display: flex; flex-direction: column; gap: 12px">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 48px">
+    <button type="button" aria-label="Back to grooves" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #2E333B; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+    </button>
+    <div style="text-align: center; min-width: 0">
+      <div style="font-size: 16px; font-weight: 600">Untitled groove</div>
+      <div style="font-size: 12px; color: #8A909B">Practice</div>
+    </div>
+    <button type="button" aria-label="More options" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #2E333B; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+    </button>
+  </div>
+
+  <div style="background: #F3EFE6; border-radius: 14px; padding: 12px 10px 10px; color: #17181B">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 6px">
+      <span style="font-size: 12px; font-weight: 600">Bar 2 of 2</span>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4A4D55">7/8 · 2+2+3</span>
+    </div>
+    <svg role="img" aria-label="Bar 2 in 7/8, grouped 2+2+3: crash and kick, hi-hat eighths, snare on 3 and 7, kicks on 5 and 6. Playhead on the 5th eighth." viewBox="366 0 384 80" style="display: block; width: 100%; height: auto">
+      <path d="M612.5 2V78" stroke="#E08A12" stroke-width="2.5"></path>
+      <path d="M366 40H750M366 48H750M366 56H750M366 64H750M366 72H750" stroke="#17181B" stroke-width="1"></path>
+      <path d="M749.4 40V72" stroke="#17181B" stroke-width="1.4"></path>
+      <rect x="370" y="48" width="2.6" height="16" fill="#17181B"></rect>
+      <rect x="375" y="48" width="2.6" height="16" fill="#17181B"></rect>
+      <g font-family="'IBM Plex Sans', sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="#17181B">
+        <text x="390" y="54">7</text>
+        <text x="390" y="70">8</text>
+      </g>
+      <path d="M404 32H421" stroke="#17181B" stroke-width="1"></path>
+      <path d="M416.5 68V18M466.5 36V18M516.5 52V18M566.5 36V18M616.5 68V18M666.5 68V18M716.5 52V18" stroke="#17181B" stroke-width="1.2"></path>
+      <g fill="#17181B">
+        <rect x="415.9" y="18" width="51.2" height="4"></rect>
+        <rect x="515.9" y="18" width="51.2" height="4"></rect>
+        <rect x="615.9" y="18" width="101.2" height="4"></rect>
+        <ellipse cx="512.5" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 512.5 52)"></ellipse>
+        <ellipse cx="712.5" cy="52" rx="4.6" ry="3.4" transform="rotate(-20 712.5 52)"></ellipse>
+        <ellipse cx="412.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 412.5 68)"></ellipse>
+        <ellipse cx="612.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 612.5 68)"></ellipse>
+        <ellipse cx="662.5" cy="68" rx="4.6" ry="3.4" transform="rotate(-20 662.5 68)"></ellipse>
+      </g>
+      <path d="M459.1 32.6L465.9 39.4M459.1 39.4L465.9 32.6M509.1 32.6L515.9 39.4M509.1 39.4L515.9 32.6M559.1 32.6L565.9 39.4M559.1 39.4L565.9 32.6M609.1 32.6L615.9 39.4M609.1 39.4L615.9 32.6M659.1 32.6L665.9 39.4M659.1 39.4L665.9 32.6M709.1 32.6L715.9 39.4M709.1 39.4L715.9 32.6M409.1 28.6L415.9 35.4M409.1 35.4L415.9 28.6" stroke="#17181B" stroke-width="1.4" stroke-linecap="round"></path>
+    </svg>
+    <div aria-hidden="true" style="display: flex; gap: 4px; padding: 8px 4px 0">
+      <span style="flex: 2 1 0px; height: 6px; border-radius: 3px; background: #CFC8B8"></span>
+      <span style="flex: 2 1 0px; height: 6px; border-radius: 3px; background: #CFC8B8"></span>
+      <span style="flex: 3 1 0px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #E08A12 0 34%, #CFC8B8 34% 100%)"></span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #8A909B">
+      <span>Loop bars 1–2</span>
+      <span>Loop 3</span>
+    </div>
+    <div style="display: flex; gap: 6px">
+      <button type="button" aria-pressed="false" style="flex: 8 1 0px; height: 44px; border-radius: 10px; border: 1px solid #2E333B; background: #1A1D22; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8A909B">1</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">4/4</span>
+      </button>
+      <button type="button" aria-pressed="true" style="flex: 7 1 0px; height: 44px; border-radius: 10px; border: 2px solid #F2A541; background: #2B2418; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #C9B48E">2</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">7/8</span>
+      </button>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; justify-content: center; gap: 28px; padding: 4px 0">
+    <button type="button" aria-label="Previous bar" style="width: 52px; height: 52px; border-radius: 50%; border: 1px solid #3A3F48; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"></path></svg>
+    </button>
+    <button type="button" aria-label="Pause" style="width: 80px; height: 80px; border-radius: 50%; border: 0; background: #F2A541; color: #1A1406; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+    </button>
+    <button type="button" aria-label="Next bar" style="width: 52px; height: 52px; border-radius: 50%; border: 1px solid #3A3F48; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"></path></svg>
+    </button>
+  </div>
+
+  <div style="background: #1A1D22; border: 1px solid #262A31; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <button type="button" aria-label="Slower" style="width: 48px; height: 48px; border-radius: 12px; border: 1px solid #3A3F48; background: transparent; font-size: 22px; padding: 0">−</button>
+      <div style="text-align: center">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 34px; font-weight: 600; line-height: 1">{{bpm}}</div>
+        <div style="font-size: 12px; color: #8A909B">♩/min · started at 84</div>
+      </div>
+      <button type="button" aria-label="Faster" style="width: 48px; height: 48px; border-radius: 12px; border: 1px solid #3A3F48; background: transparent; font-size: 22px; padding: 0">+</button>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px solid #262A31">
+      <div>
+        <div style="font-size: 14px; font-weight: 600">Speed trainer</div>
+        <div style="font-size: 12px; color: #A9AEB8">+4 every 4 loops, stop at 120</div>
+      </div>
+      <button type="button" role="switch" aria-checked="true" aria-label="Speed trainer" style="width: 52px; height: 32px; border-radius: 999px; border: 0; background: #6CB4EE; position: relative; padding: 0; flex: none">
+        <span style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: #0E1A24"></span>
+      </button>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-size: 14px; font-weight: 600">Parts</span>
+      <span style="font-size: 12px; color: #8A909B">Mute a part to play it yourself</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+      <button type="button" aria-pressed="false" style="height: 44px; border-radius: 10px; border: 1px solid #2E333B; background: #1A1D22; font-size: 13px; padding: 0">Cymbals</button>
+      <button type="button" aria-pressed="false" style="height: 44px; border-radius: 10px; border: 1px solid #2E333B; background: #1A1D22; font-size: 13px; padding: 0">Snare</button>
+      <button type="button" aria-pressed="false" style="height: 44px; border-radius: 10px; border: 1px solid #2E333B; background: #1A1D22; font-size: 13px; padding: 0">Toms</button>
+      <button type="button" aria-pressed="true" style="height: 44px; border-radius: 10px; border: 1px dashed #F2A541; background: transparent; color: #F2A541; font-size: 13px; font-weight: 600; padding: 0; display: flex; align-items: center; justify-content: center; gap: 6px">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"></path><path d="M22 9l-6 6M16 9l6 6"></path></svg>
+        Kick
+      </button>
+      <button type="button" aria-pressed="false" style="height: 44px; border-radius: 10px; border: 1px solid #2E333B; background: #1A1D22; font-size: 13px; padding: 0">Hi-hat foot</button>
+      <button type="button" aria-pressed="true" style="height: 44px; border-radius: 10px; border: 1px solid #6CB4EE; background: #1D3347; font-size: 13px; padding: 0">Click</button>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 6px; margin-top: auto">
+    <button type="button" style="flex: 1 1 0px; height: 44px; border-radius: 10px; border: 1px solid #2E333B; background: transparent; font-size: 13px; padding: 0">Count-in: 1 bar</button>
+    <button type="button" style="flex: 1 1 0px; height: 44px; border-radius: 10px; border: 1px solid #2E333B; background: transparent; font-size: 13px; padding: 0">Click: group accents</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { bpm: '96' };
+  }
+}
+</script>
+</body>
+</html>

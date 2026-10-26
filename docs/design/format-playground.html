@@ -1,0 +1,2125 @@
+<title>Rhythm Tree Format</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one working column. A live playground first (link text ⇄ tree ⇄ lanes on one time axis), then reference sections that read off the same score. Dark-first, like the editor. */
+:root {
+  --bg: #121417;
+  --panel: #1a1d22;
+  --raise: #22262d;
+  --line: #2e333b;
+  --fg: #ece9e2;
+  --fg-2: #a9aeb8;
+  --fg-3: #8a909b;
+  --hit: #f2a541;
+  --hit-soft: rgba(242, 165, 65, 0.16);
+  --on-hit: #1a1406;
+  --tup: #6cb4ee;
+  --tup-soft: rgba(108, 180, 238, 0.16);
+  --good: #8fd3a6;
+  --bad: #f2a7a0;
+  --code-bg: #16191d;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.5rem;
+  --step-3: 2.25rem;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f4f6;
+    --panel: #ffffff;
+    --raise: #eceef2;
+    --line: #d6dae1;
+    --fg: #16191d;
+    --fg-2: #454c57;
+    --fg-3: #5f6772;
+    --hit: #9a5600;
+    --hit-soft: rgba(201, 122, 18, 0.16);
+    --on-hit: #1a1406;
+    --tup: #1d6aab;
+    --tup-soft: rgba(29, 106, 171, 0.12);
+    --good: #1e7a45;
+    --bad: #b3261e;
+    --code-bg: #f7f8fa;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --raise: #eceef2;
+  --line: #d6dae1;
+  --fg: #16191d;
+  --fg-2: #454c57;
+  --fg-3: #5f6772;
+  --hit: #9a5600;
+  --hit-soft: rgba(201, 122, 18, 0.16);
+  --on-hit: #1a1406;
+  --tup: #1d6aab;
+  --tup-soft: rgba(29, 106, 171, 0.12);
+  --good: #1e7a45;
+  --bad: #b3261e;
+  --code-bg: #f7f8fa;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.55;
+}
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: var(--step-3); font-weight: 600; letter-spacing: -0.02em; }
+h2 { font-size: var(--step-2); font-weight: 600; letter-spacing: -0.01em; }
+h3 { font-size: var(--step-1); font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--tup); }
+code, kbd, pre, .mono { font-family: var(--font-mono); }
+code { font-size: 0.92em; background: var(--raise); padding: 1px 5px; border-radius: 4px; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--tup); outline-offset: 2px; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.muted { color: var(--fg-2); }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; gap: 20px 40px; align-items: flex-end; justify-content: space-between; }
+.top-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1 1 520px; }
+.lede { color: var(--fg-2); font-size: var(--step-1); line-height: 1.5; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; }
+.toc a {
+  font-size: var(--step--1);
+  color: var(--fg-2);
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.toc a:hover { color: var(--fg); border-color: var(--fg-3); }
+
+/* Sections */
+.section { display: flex; flex-direction: column; gap: 16px; }
+.section-head { display: flex; flex-direction: column; gap: 8px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+
+/* Playground */
+.play { overflow: hidden; }
+.play-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--step--1);
+  font-weight: 500;
+}
+.chip[aria-pressed="true"] { border-color: var(--tup); background: var(--tup-soft); }
+.play-grid { display: flex; flex-wrap: wrap; }
+.io {
+  flex: 1 1 340px;
+  min-width: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-right: 1px solid var(--line);
+}
+.viz { flex: 999 1 560px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.field-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--step--1); font-weight: 600; color: var(--fg-2); }
+textarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg);
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  word-break: break-all;
+}
+input[type="text"] {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--fg);
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  min-height: 40px;
+}
+.small-btn {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--step--1);
+}
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.stat { background: var(--panel); padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.stat dt { font-size: 11px; color: var(--fg-3); letter-spacing: 0.04em; text-transform: uppercase; }
+.stat dd { margin: 0; font-family: var(--font-mono); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.issues { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: var(--step--1); }
+.issues li { display: flex; gap: 8px; align-items: baseline; }
+.issues .tag { font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; flex: none; }
+.issues .error .tag { background: var(--bad); color: var(--bg); }
+.issues .warn .tag { border: 1px solid var(--hit); color: var(--hit); }
+.issues .ok { color: var(--good); }
+.import { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.import summary { cursor: pointer; font-size: var(--step--1); font-weight: 600; color: var(--fg-2); }
+.import-body { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.note { font-size: var(--step--1); color: var(--fg-2); }
+
+.bar-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.bar-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.bar-tab {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bar-tab .num { color: var(--fg-3); font-size: 11px; }
+.bar-tab[aria-selected="true"] { border-color: var(--fg-2); background: var(--raise); }
+.bar-text { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); overflow-wrap: anywhere; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--fg-3); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+.sw.tup { background: var(--tup-soft); border: 1px solid var(--tup); }
+.sw.plain { background: var(--raise); border: 1px solid var(--line); }
+.sw.hit { background: var(--hit-soft); border: 1px solid var(--hit); }
+
+.tree-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+.tree { min-width: 640px; }
+.trow { display: grid; grid-template-columns: 104px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+.trow:last-child { border-bottom: 0; }
+.tlab {
+  padding: 6px 10px;
+  border-right: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--fg-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+.tlab b { font-weight: 600; color: var(--fg); font-size: 13px; }
+.tlab .lane-id { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+.tlab .own { font-size: 10px; font-weight: 600; color: var(--tup); letter-spacing: 0.04em; text-transform: uppercase; }
+.ttime { position: relative; min-height: 36px; }
+.gline { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px dashed var(--line); pointer-events: none; }
+.gline.bar-edge { border-left-style: solid; border-color: var(--fg-3); }
+.ruler-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.ruler-seg small { font-weight: 400; color: var(--fg-3); margin-left: 6px; }
+.node {
+  position: absolute;
+  margin: 0;
+  padding: 0 4px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--raise);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.node.tup { border-color: var(--tup); background: var(--tup-soft); color: var(--tup); }
+.node.tup .inferred { font-weight: 400; font-style: italic; opacity: 0.85; }
+.node.leaf { background: transparent; color: var(--fg-3); font-weight: 400; }
+.node.sel { outline: 2px solid var(--fg); outline-offset: -2px; color: var(--fg); }
+.cell {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: var(--raise);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.cell.on { background: var(--hit-soft); color: var(--hit); box-shadow: inset 0 0 0 1px var(--hit); }
+.cell.in-sel { box-shadow: inset 0 -3px 0 var(--tup); }
+.cell.on.in-sel { box-shadow: inset 0 0 0 1px var(--hit), inset 0 -3px 0 var(--tup); }
+.cell.accent { color: var(--on-hit); background: var(--hit); }
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+}
+.detail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.detail dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 16px; margin: 0; }
+.detail dt { font-size: 11px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.detail dd { margin: 0; font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Reference blocks */
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card ul, .card ol { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+pre {
+  margin: 0;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg);
+}
+pre .cm { color: var(--fg-3); }
+pre .k { color: var(--tup); }
+pre .h { color: var(--hit); }
+
+.matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.matrix { min-width: 720px; }
+.matrix th, .matrix td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: center; font-size: 13px; }
+.matrix thead th { font-family: var(--font-mono); color: var(--fg-3); font-weight: 600; background: var(--raise); }
+.matrix tbody th { text-align: left; font-weight: 500; white-space: nowrap; color: var(--fg); }
+.matrix tbody th small { display: block; color: var(--fg-3); font-weight: 400; font-family: var(--font-mono); }
+.matrix td { font-family: var(--font-mono); }
+.matrix td.plain { color: var(--fg-3); }
+.matrix td.tup b { color: var(--tup); font-weight: 600; }
+.matrix td small { display: block; font-size: 11px; color: var(--fg-3); }
+.matrix tr:last-child th, .matrix tr:last-child td { border-bottom: 0; }
+
+.anatomy { display: flex; flex-direction: column; gap: 0; }
+.param { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 4px 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); align-items: start; }
+.param:last-child { border-bottom: 0; }
+.param .kv { font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; min-width: 0; }
+.param .key { color: var(--tup); font-weight: 600; }
+.param .val { color: var(--fg); }
+.param .val .sep { color: var(--hit); font-weight: 600; }
+.param .why { font-size: var(--step--1); color: var(--fg-2); min-width: 0; }
+.param .why b { color: var(--fg); font-weight: 600; }
+
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.compare figure { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.compare figcaption { display: flex; justify-content: space-between; gap: 8px; font-size: var(--step--1); color: var(--fg-2); }
+.compare figcaption b { font-family: var(--font-mono); color: var(--fg); }
+.compare pre { white-space: pre-wrap; word-break: break-all; }
+.map-table th, .map-table td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; vertical-align: top; }
+.map-table thead th { background: var(--raise); color: var(--fg-3); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.map-table td:first-child { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+.map-table tr:last-child td { border-bottom: 0; }
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: 4px 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.steps li:last-child { border-bottom: 0; }
+.steps li::before { content: counter(s); grid-row: span 2; font-family: var(--font-mono); font-weight: 600; color: var(--hit); font-size: var(--step-1); }
+.steps h3 { font-size: var(--step-0); }
+.steps p { color: var(--fg-2); font-size: var(--step--1); max-width: 76ch; }
+@media (max-width: 720px) {
+  .io { border-right: 0; border-bottom: 1px solid var(--line); }
+  .param { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 1.9rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .node, .cell, .chip, .bar-tab { transition: background-color 120ms ease, box-shadow 120ms ease, border-color 120ms ease; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-text">
+      <p class="eyebrow">Groove Scribe fork · data model proposal</p>
+      <h1>Rhythm Tree Format</h1>
+      <p class="lede">Every bar is a tree of equal splits, timed in exact fractions of a quarter note, and the whole groove fits in a readable link. Edit the link text or click the lanes below; each one rewrites the other.</p>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#playground">Playground</a>
+      <a href="#model">The model</a>
+      <a href="#tuplets">Tuplet rule</a>
+      <a href="#anatomy">Link anatomy</a>
+      <a href="#legacy">Old links</a>
+      <a href="#fork">In the fork</a>
+    </nav>
+  </header>
+
+  <section id="playground" class="panel play" aria-label="Playground">
+    <div class="play-head">
+      <span class="eyebrow">Examples</span>
+      <div class="presets" role="group" aria-label="Example grooves" id="presets"></div>
+    </div>
+    <div class="play-grid">
+      <div class="io">
+        <div class="field-label">
+          <label for="frag">Link fragment, after the #</label>
+          <button type="button" class="small-btn" id="copyBtn">Copy</button>
+        </div>
+        <textarea id="frag" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        <dl class="stats" id="stats"></dl>
+        <ul class="issues" id="issues" aria-live="polite"></ul>
+        <details class="import" id="importBox">
+          <summary>Convert a Groove Scribe link</summary>
+          <div class="import-body">
+            <label class="note" for="legacyIn">Paste any mikeslessons.com/groove link. It is converted to the new format in the box above.</label>
+            <input type="text" id="legacyIn" spellcheck="false" autocomplete="off">
+            <div><button type="button" class="small-btn" id="convertBtn">Convert</button></div>
+            <p class="note" id="convertNote"></p>
+          </div>
+        </details>
+      </div>
+      <div class="viz">
+        <div class="bar-row">
+          <div class="bar-tabs" role="tablist" aria-label="Bars" id="barTabs"></div>
+          <div class="legend" aria-hidden="true">
+            <span><i class="sw tup"></i>tuplet</span>
+            <span><i class="sw plain"></i>even split</span>
+            <span><i class="sw hit"></i>hit</span>
+          </div>
+        </div>
+        <div class="bar-text" id="barText"></div>
+        <div class="tree-scroll"><div class="tree" id="tree"></div></div>
+        <div class="detail" id="detail" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="model" class="section">
+    <div class="section-head">
+      <p class="eyebrow">The model</p>
+      <h2>One node type, exact time</h2>
+      <p class="muted">A node splits the time it's given into <code>n</code> equal slots. Its children fill those slots; a child's weight says how many it takes. That's the whole structure. Mixed meters, per-beat subdivisions, lane polyrhythms and nested tuplets are all arrangements of it.</p>
+    </div>
+    <div class="two">
+      <div class="panel card">
+        <h3>Shapes</h3>
+<pre><span class="k">Score</span>  title, author, comments
+       tempo     <span class="cm">quarters per minute at bar 1</span>
+       swing     <span class="cm">0–100, playback feel, as today</span>
+       bars      <span class="k">Bar</span>[]
+       hits      lane → one string per bar, one letter per slot
+       overrides <span class="k">Override</span>[]
+       tempoChanges
+
+<span class="k">Bar</span>    num / den       <span class="cm">7/8</span>
+       groups          <span class="cm">[2, 2, 3] in 8ths: beaming, beat lines, click</span>
+       segs  <span class="k">Node</span>[]      <span class="cm">weights count beat groups</span>
+
+<span class="k">Node</span>   n               <span class="cm">equal slots</span>
+       w = 1           <span class="cm">slots taken in the parent</span>
+       kids? <span class="k">Node</span>[]     <span class="cm">weights sum to n; absent = n leaves</span>
+       m?              <span class="cm">bracket label n:m, display only</span>
+
+<span class="k">Override</span> lane, bar, path, node
+         <span class="cm">this lane swaps one subtree for its own</span></pre>
+      </div>
+      <div class="panel card">
+        <h3>Rules that keep it honest</h3>
+        <ul>
+          <li><b>No tuplet type.</b> A split is a tuplet when its slots aren't plain note values. Three in a quarter is a triplet; three in a dotted quarter is plain 8ths. The rule below decides, so timing and notation can't disagree.</li>
+          <li><b>Ratios are labels.</b> <code>6:4</code> and <code>6</code> play identically. The ratio only overrides how the bracket reads.</li>
+          <li><b>Time is a fraction, never a float.</b> Onsets are rationals of a quarter note (a nested quintuplet starts at <code>22/15</code>). Seconds are computed last, so long loops don't drift.</li>
+          <li><b>Slots, not ticks.</b> Hits address leaves in time order, one letter each. Change a beat from 16ths to quintuplets and existing hits snap to the nearest new slot in the editor; the format never stores an onset that isn't on the tree.</li>
+          <li><b>Lanes are kit pieces.</b> One articulation per lane per slot, using Groove Scribe's own letters. A crash and a hi-hat on the same slot are two lanes, so they can finally coexist.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="tuplets" class="section">
+    <div class="section-head">
+      <p class="eyebrow">Tuplet rule</p>
+      <h2>When is a split a tuplet?</h2>
+      <p class="muted">Each slot is written as the smallest plain note value at least as long as its real length, dropping one size when that doesn't tile the span. The count of those written notes that fill the span is <code>m</code>. Inside a tuplet the same rule runs on written lengths: a triplet quarter is written as a quarter, so a 5 inside it is a 5:4 of 16ths. This table is computed by the module, not typed in.</p>
+    </div>
+    <div class="matrix-wrap"><table class="matrix" id="matrix"></table></div>
+  </section>
+
+  <section id="anatomy" class="section">
+    <div class="section-head">
+      <p class="eyebrow">Link anatomy</p>
+      <h2>The current example, field by field</h2>
+      <p class="muted">The groove lives in the fragment, after <code>#</code>, so it never reaches a server and the editor can rewrite it on every change without reloading. Every character the format uses is legal unescaped in a fragment; only free text (title, author, comments) is percent-encoded.</p>
+    </div>
+    <div class="panel anatomy" id="anatomy-list"></div>
+    <div class="two">
+      <div class="panel card">
+        <h3>Grammar</h3>
+<pre><span class="cm">// nodes</span>
+node  := INT [ <span class="h">':'</span> INT ] [ <span class="h">'('</span> node { <span class="h">','</span> node } <span class="h">')'</span> ] [ <span class="h">'@'</span> INT ]
+<span class="cm">// bars, separated by ';'</span>
+bar   := INT <span class="h">'/'</span> INT [ <span class="h">'~'</span> INT { <span class="h">'-'</span> INT } ] <span class="h">':'</span> node { <span class="h">','</span> node } [ <span class="h">'*'</span> INT ]
+<span class="cm">// lane hits, one bar per ';'</span>
+hits  := { letter | <span class="h">'-'</span> | <span class="h">'-'</span> INT } | <span class="h">'.'</span>
+<span class="cm">// lane overrides, separated by ';'</span>
+ov    := lane <span class="h">'@'</span> bar { <span class="h">'.'</span> index } <span class="h">'!'</span> node
+<span class="cm">// metric modulation: at bar, a unit note lasts as long as old did</span>
+tc    := bar <span class="h">':'</span> frac <span class="h">'~'</span> frac</pre>
+      </div>
+      <div class="panel card">
+        <h3>Reading nodes</h3>
+<pre><span class="k">4</span>                  <span class="cm">four leaves</span>
+<span class="k">6:4</span>                <span class="cm">six leaves, bracket reads 6:4</span>
+<span class="k">3:2(2,2,5:4)</span>       <span class="cm">three slots: two split in 2,</span>
+                   <span class="cm">the third holds a 5:4</span>
+<span class="k">5:4(1,1,1,3:2@2)</span>   <span class="cm">five slots; the 3:2 fills 4–5</span>
+<span class="k">3(1@2,1)</span>           <span class="cm">triplet swing: long, short</span>
+<span class="k">7/8:4,4,6</span>          <span class="cm">7/8 in 16ths; 2+2+3 is the</span>
+                   <span class="cm">default grouping, so omitted</span>
+<span class="k">7/8~3-2-2:6,4,4</span>    <span class="cm">same bar grouped 3+2+2</span>
+<span class="k">4/4:4*8</span>            <span class="cm">eight bars of 4/4 in 16ths</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="legacy" class="section">
+    <div class="section-head">
+      <p class="eyebrow">Old links</p>
+      <h2>Every Groove Scribe link still opens</h2>
+      <p class="muted">A link without <code>v=2</code> that carries Groove Scribe fields goes through the importer, which mirrors the original parser: case-insensitive field names, the same tolerant rescaling of tab lines that are too long or short, the same tempo and measure limits. Its letters map straight onto lanes.</p>
+    </div>
+    <div class="compare" id="compare"></div>
+    <div class="two">
+      <div class="matrix-wrap">
+        <table class="map-table">
+          <thead><tr><th>Old field · letter</th><th>New lane · letter</th></tr></thead>
+          <tbody>
+            <tr><td>H · x X o +</td><td>Hi-hat <code>hh</code>, same letters (closed, accent, open, closed mark)</td></tr>
+            <tr><td>H · c</td><td>Crash <code>cr</code> · x</td></tr>
+            <tr><td>H · r b</td><td>Ride <code>rd</code> · x, bell b</td></tr>
+            <tr><td>H · s m n N</td><td>Stacker <code>sk</code>, cowbell <code>cb</code>, metronome <code>mt</code></td></tr>
+            <tr><td>S · o O g x f d b</td><td>Snare <code>sn</code>, same letters (normal, accent, ghost, cross-stick, flam, drag, buzz)</td></tr>
+            <tr><td>K · o</td><td>Kick <code>kk</code> · o</td></tr>
+            <tr><td>K · x</td><td>Hi-hat foot <code>hf</code> · x</td></tr>
+            <tr><td>K · X</td><td>Kick <code>kk</code> o and hi-hat foot <code>hf</code> x</td></tr>
+            <tr><td>T1 – T4</td><td>Toms <code>t1</code> – <code>t4</code> · o</td></tr>
+            <tr><td>Stickings · R L B c</td><td>Sticking <code>st</code>, same letters</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel card">
+        <h3>What the old format couldn't say</h3>
+        <ul>
+          <li>One <code>TimeSig</code> and one <code>Div</code> for the whole groove, so no meter changes and no beat-by-beat subdivision.</li>
+          <li>Triplet divisions only fit 2/4 and 4/4; the source logs a warning for anything else.</li>
+          <li>At most 10 measures.</li>
+          <li>One symbol per slot on the <code>H</code> line, so a crash can't land with the hi-hat, and kick plus hi-hat foot needs its own combined letter.</li>
+          <li>MIDI at 128 ticks per quarter, so 16th-note triplets fall on 10.666 ticks. The new module picks a resolution where every onset is a whole tick.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="fork" class="section">
+    <div class="section-head">
+      <p class="eyebrow">In the fork</p>
+      <h2>Where it plugs in, and where the speed comes from</h2>
+      <p class="muted">The module is <code>js/rhythmTree.js</code>: pure, no DOM, written to the repo's conventions (ES module, JSDoc types, Vitest). It sits beside <code>urlSerialization.js</code>, the way the grooveData contract does today.</p>
+    </div>
+    <ol class="panel steps">
+      <li><h3>Make the score the source of truth</h3><p>Today the grid's state is read back from each cell's rendered color (<code>gridState.js</code>) and assembled into grooveData on demand. Render the grid from the score instead, and have clicks edit the score. Undo becomes a stack of scores, or of link strings.</p></li>
+      <li><h3>Compile per bar, cache by text</h3><p><code>formatBar()</code> plus that bar's overrides is a stable key. Keep each bar's leaves and events under it, and an edit recomputes one bar.</p></li>
+      <li><h3>Engrave per bar</h3><p><code>updateSheetMusic()</code> regenerates the ABC for the whole groove and re-renders all of it through abc2svg on every change. Render and cache each bar's SVG under the same key and redraw only the edited one. Check that abc2svg handles the nesting depth you want; ABC's tuplet syntax doesn't express nesting cleanly, so deep tuplets may need a different engraver.</p></li>
+      <li><h3>Schedule with Web Audio</h3><p>A changed groove is currently rebuilt into a MIDI file and reloaded at the next loop (<code>midiNoteHasChanged</code> → <code>loadMidiDataEvent</code>). <code>compileEvents()</code> returns times in seconds; a lookahead scheduler reading them picks up an edit within one scheduling window instead of one loop.</p></li>
+      <li><h3>Export MIDI at an exact resolution</h3><p><code>midiResolution()</code> returns the smallest ticks-per-quarter (at least 480) that puts every onset on a whole tick, and says whether it fits a MIDI header.</p></li>
+      <li><h3>Write the link lazily, read both formats</h3><p>Debounce <code>history.replaceState</code> with <code>encode(score)</code>. <code>decode()</code> routes old query links through the importer, so shared links, bookmarks and the built-in groove library keep working, and the golden-master suite still covers the old renderer during the move.</p></li>
+    </ol>
+  </section>
+</div>
+
+<script type="module">
+// ---- js/rhythmTree.js (inlined, unchanged) ----
+// rhythmTree.js — proposed v2 rhythm model + URL codec for Groove Scribe.
+//
+// A bar is a meter, a beat grouping, and a list of segments. Each segment is a
+// node, and every node is one thing: an n-way equal split of the time it
+// occupies — either into n leaves, or into child nodes whose weights (the
+// number of slots each fills) sum to n.
+//
+// There is no tuplet node type. Whether a split engraves as a tuplet falls out
+// of its *written* span (see tupletFor): 3 in a quarter is a triplet, 3 in a
+// dotted quarter is plain 8ths. An optional ratio (n:m) only overrides how the
+// bracket is labelled; it never changes timing.
+//
+// All timing is exact rational arithmetic in quarter notes, so nested tuplets
+// never drift, and MIDI tick resolution can be chosen to make every onset an
+// integer.
+//
+// Pure module: no DOM, no GrooveUtils.
+
+export const MAX_SLOTS = 64;
+export const MAX_DEPTH = 6;
+export const MAX_BARS = 512;
+export const MAX_LEAVES_PER_BAR = 512;
+
+/* ------------------------------------------------------------------ */
+/* Rationals                                                           */
+/* ------------------------------------------------------------------ */
+
+/** @typedef {[number, number]} Rat  [numerator, denominator]; denominator > 0, reduced. */
+
+function gcd(a, b) {
+  a = Math.abs(a);
+  b = Math.abs(b);
+  while (b) [a, b] = [b, a % b];
+  return a;
+}
+
+function lcm(a, b) {
+  return (a / gcd(a, b)) * b;
+}
+
+/**
+ * @param {number} n
+ * @param {number} [d]
+ * @returns {Rat}
+ */
+export function rat(n, d = 1) {
+  if (!Number.isInteger(n) || !Number.isInteger(d) || d === 0) {
+    throw new RangeError(`bad rational ${n}/${d}`);
+  }
+  if (d < 0) {
+    n = -n;
+    d = -d;
+  }
+  const g = gcd(n, d) || 1;
+  return [n / g, d / g];
+}
+
+/** @param {Rat} a @param {Rat} b @returns {Rat} */
+export function radd(a, b) {
+  const l = lcm(a[1], b[1]);
+  return rat(a[0] * (l / a[1]) + b[0] * (l / b[1]), l);
+}
+
+/** @param {Rat} a @param {Rat} b @returns {Rat} */
+export function rmul(a, b) {
+  const g1 = gcd(a[0], b[1]) || 1;
+  const g2 = gcd(b[0], a[1]) || 1;
+  return rat((a[0] / g1) * (b[0] / g2), (a[1] / g2) * (b[1] / g1));
+}
+
+/** @param {Rat} a @param {Rat} b @returns {Rat} */
+export function rdiv(a, b) {
+  if (b[0] === 0) throw new RangeError('divide by zero');
+  return rmul(a, [b[1], b[0]]);
+}
+
+/** Negative, zero or positive as a <, =, > b. @param {Rat} a @param {Rat} b */
+export function rcmp(a, b) {
+  return a[0] * b[1] - b[0] * a[1];
+}
+
+/** @param {Rat} a */
+export const rnum = (a) => a[0] / a[1];
+
+/** @param {Rat} a */
+export const rstr = (a) => (a[1] === 1 ? String(a[0]) : `${a[0]}/${a[1]}`);
+
+/** @param {string} s @returns {Rat} */
+function parseRat(s) {
+  const m = /^(\d+)(?:\/(\d+))?$/.exec(s);
+  if (!m) throw new SyntaxError(`bad fraction '${s}'`);
+  return rat(Number(m[1]), m[2] ? Number(m[2]) : 1);
+}
+
+function isPow2Int(x) {
+  return x > 0 && 2 ** Math.round(Math.log2(x)) === x;
+}
+
+/** True for 1, 2, 4 … and 1/2, 1/4 … @param {Rat} r */
+function isPow2(r) {
+  return (r[0] === 1 && isPow2Int(r[1])) || (r[1] === 1 && isPow2Int(r[0]));
+}
+
+/** Smallest 2^k (k may be negative) that is >= r. @param {Rat} r @returns {Rat} */
+function pow2AtLeast(r) {
+  let p = rat(1);
+  while (rcmp(p, r) < 0) p = rmul(p, [2, 1]);
+  while (rcmp(rmul(p, [1, 2]), r) >= 0) p = rmul(p, [1, 2]);
+  return p;
+}
+
+/* ------------------------------------------------------------------ */
+/* Model                                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One node of a bar's rhythm tree.
+ *
+ * @typedef {Object} RNode
+ * @property {number} n        Slots: equal parts this node splits its span into.
+ * @property {number} w        Weight: how many of the parent's slots it fills (default 1).
+ *                             At bar level, weight counts beat groups.
+ * @property {number} [m]      Display ratio n:m for the tuplet bracket (engraving only).
+ * @property {RNode[]} [kids]  Children filling the n slots; weights sum to n. Absent = n leaves.
+ */
+
+/**
+ * @typedef {Object} Bar
+ * @property {number} num       Meter numerator.
+ * @property {number} den       Meter denominator: 1, 2, 4, 8, 16 or 32.
+ * @property {number[]} groups  Beat grouping in 1/den units, summing to num (7/8 → [2, 2, 3]).
+ * @property {RNode[]} segs     Segments; their weights count beat groups and sum to groups.length.
+ */
+
+/**
+ * A lane that replaces one subtree with its own (polyrhythm: hi-hat in 5 while
+ * the kick stays in 4). The replacement keeps the weight of what it replaces.
+ *
+ * @typedef {Object} Override
+ * @property {string} lane
+ * @property {number} bar     0-based bar index.
+ * @property {number[]} path  [segment, child, child …], 0-based.
+ * @property {RNode} node
+ */
+
+/**
+ * Metric modulation at the start of a bar: a `unit` note (in quarters) now
+ * lasts as long as an `old` note did. ♩. = ♩ is { unit: 3/2, old: 1 }.
+ *
+ * @typedef {Object} TempoChange
+ * @property {number} bar
+ * @property {Rat} unit
+ * @property {Rat} old
+ */
+
+/**
+ * @typedef {Object} Score
+ * @property {string} title
+ * @property {string} author
+ * @property {string} comments
+ * @property {number} tempo                 Quarter notes per minute at bar 1.
+ * @property {number} swing                 0–100, applied at playback as today.
+ * @property {Bar[]} bars
+ * @property {Record<string, string[]>} hits  lane → one string per bar, one char per leaf ('-' = rest).
+ * @property {Override[]} overrides
+ * @property {TempoChange[]} tempoChanges
+ */
+
+/**
+ * The default kit. One articulation per lane per leaf; simultaneous pieces are
+ * separate lanes (Groove Scribe's single H lane can't hold a crash and a
+ * hi-hat at once; here they're independent). Characters are Groove Scribe's
+ * own tab letters, so legacy import is a re-mapping, not a translation.
+ */
+export const LANES = {
+  cr: { name: 'Crash', chars: 'xX' },
+  rd: { name: 'Ride', chars: 'xXb' },
+  hh: { name: 'Hi-hat', chars: 'xXo+' },
+  sk: { name: 'Stacker', chars: 'x' },
+  cb: { name: 'Cowbell', chars: 'x' },
+  sn: { name: 'Snare', chars: 'oOgxfdb' },
+  t1: { name: 'High tom', chars: 'oO' },
+  t2: { name: 'Mid tom', chars: 'oO' },
+  t3: { name: 'Low tom', chars: 'oO' },
+  t4: { name: 'Floor tom', chars: 'oO' },
+  kk: { name: 'Kick', chars: 'oO' },
+  hf: { name: 'Hi-hat foot', chars: 'x' },
+  mt: { name: 'Metronome', chars: 'nN' },
+  st: { name: 'Sticking', chars: 'RLBc' },
+};
+
+export const LANE_ORDER = Object.keys(LANES);
+
+const META_KEYS = new Set(['v', 't', 'a', 'c', 'q', 'sw', 'b', 'tc', 'ov']);
+
+/**
+ * Default beat grouping: quarter-note meters beat by beat; 8th/16th meters in
+ * 3s when divisible by 3, otherwise 2s ending in a 3 (7/8 → 2+2+3).
+ *
+ * @param {number} num
+ * @param {number} den
+ * @returns {number[]}
+ */
+export function defaultGroups(num, den) {
+  if (den <= 4) return Array(num).fill(1);
+  if (num % 3 === 0) return Array(num / 3).fill(3);
+  if (num < 4) return [num];
+  const g = [];
+  let r = num;
+  while (r > 3) {
+    g.push(2);
+    r -= 2;
+  }
+  g.push(r);
+  return g;
+}
+
+/**
+ * A bar in 16ths with the default grouping.
+ *
+ * @param {number} num
+ * @param {number} den
+ * @returns {Bar}
+ */
+export function defaultBar(num, den) {
+  const groups = defaultGroups(num, den);
+  return {
+    num,
+    den,
+    groups,
+    segs: groups.map((g) => ({ n: Math.max(1, Math.round((g * 16) / den)), w: 1 })),
+  };
+}
+
+/** @returns {Score} */
+export function emptyScore() {
+  return {
+    title: '',
+    author: '',
+    comments: '',
+    tempo: 80,
+    swing: 0,
+    bars: [defaultBar(4, 4)],
+    hits: {},
+    overrides: [],
+    tempoChanges: [],
+  };
+}
+
+/** Bar length in quarter notes. @param {Bar} bar @returns {Rat} */
+export function barLength(bar) {
+  return rat(bar.num * 4, bar.den);
+}
+
+/** @param {RNode} node @returns {RNode} */
+function cloneNode(node) {
+  /** @type {RNode} */
+  const c = { n: node.n, w: node.w };
+  if (node.m) c.m = node.m;
+  if (node.kids) c.kids = node.kids.map(cloneNode);
+  return c;
+}
+
+/* ------------------------------------------------------------------ */
+/* Engraving: is this split a tuplet?                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * How a split engraves. `writtenSpan` is the node's span in *written* quarters:
+ * inside a 3:2, a triplet quarter is written as a quarter, so its children are
+ * judged against a written span of 1.
+ *
+ * Rule: if span/n is a plain note value, it's not a tuplet. Otherwise the slot
+ * is written as the smallest power-of-two value >= its real length (falling
+ * back one size smaller when that doesn't tile the span), and m = how many of
+ * those fill the span. 3 in ♩ → 3:2 ♪; 5 in ♩ → 5:4 ♬; 2 in ♩. → 2:3 ♪.
+ *
+ * @param {Rat} writtenSpan
+ * @param {number} n
+ * @param {number} [m]  Explicit ratio from the URL; overrides the inference.
+ * @returns {{n: number, m: (number|null), w: Rat} | null}
+ *   null = plain note values. w = written value of one slot. m = null means
+ *   show "n" alone (irregular span).
+ */
+export function tupletFor(writtenSpan, n, m) {
+  if (n === 1) return null;
+  if (m) return m === n ? null : { n, m, w: rdiv(writtenSpan, rat(m)) };
+  const d = rdiv(writtenSpan, rat(n));
+  if (isPow2(d)) return null;
+  let w = pow2AtLeast(d);
+  let k = rdiv(writtenSpan, w);
+  if (k[1] !== 1) {
+    w = rmul(w, rat(1, 2));
+    k = rdiv(writtenSpan, w);
+  }
+  return k[1] === 1 ? { n, m: k[0], w } : { n, m: null, w: d };
+}
+
+/* ------------------------------------------------------------------ */
+/* Tree walking                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * @typedef {Object} NodeInfo
+ * @property {number[]} path   [segment, child …]
+ * @property {number} depth    0 = segment.
+ * @property {Rat} start       Onset in quarters from the top of the bar.
+ * @property {Rat} span        Real length in quarters.
+ * @property {Rat} written     Written length in quarters (what the engraver draws).
+ * @property {number} n
+ * @property {{n: number, m: (number|null), w: Rat} | null} tuplet
+ * @property {boolean} leaf
+ */
+
+/**
+ * Every node of a bar, depth-first. Leaves come out in time order, which is
+ * the order of the lane hit strings.
+ *
+ * @param {Bar} bar
+ * @param {RNode[]} [segs]  A lane's effective segments (see laneSegs).
+ * @returns {NodeInfo[]}
+ */
+export function barNodes(bar, segs = bar.segs) {
+  /** @type {NodeInfo[]} */
+  const out = [];
+  let g = 0;
+  let onset = rat(0);
+  segs.forEach((seg, si) => {
+    let units = 0;
+    for (let k = g; k < g + seg.w; k++) units += bar.groups[k];
+    g += seg.w;
+    const span = rat(units * 4, bar.den);
+    walk(seg, onset, span, span, [si], 0, out);
+    onset = radd(onset, span);
+  });
+  return out;
+}
+
+/**
+ * @param {RNode} node @param {Rat} onset @param {Rat} span @param {Rat} wspan
+ * @param {number[]} path @param {number} depth @param {NodeInfo[]} out
+ */
+function walk(node, onset, span, wspan, path, depth, out) {
+  const isLeaf = node.n === 1 && !node.kids;
+  const t = tupletFor(wspan, node.n, node.m);
+  out.push({ path, depth, start: onset, span, written: wspan, n: node.n, tuplet: t, leaf: isLeaf });
+  if (isLeaf) return;
+  const slot = rdiv(span, rat(node.n));
+  const wslot = t ? t.w : rdiv(wspan, rat(node.n));
+  if (!node.kids) {
+    for (let i = 0; i < node.n; i++) {
+      out.push({
+        path: [...path, i],
+        depth: depth + 1,
+        start: radd(onset, rmul(slot, rat(i))),
+        span: slot,
+        written: wslot,
+        n: 1,
+        tuplet: null,
+        leaf: true,
+      });
+    }
+    return;
+  }
+  let s = 0;
+  node.kids.forEach((kid, ki) => {
+    walk(
+      kid,
+      radd(onset, rmul(slot, rat(s))),
+      rmul(slot, rat(kid.w)),
+      rmul(wslot, rat(kid.w)),
+      [...path, ki],
+      depth + 1,
+      out
+    );
+    s += kid.w;
+  });
+}
+
+/** @param {Bar} bar @param {RNode[]} [segs] @returns {NodeInfo[]} */
+export function barLeaves(bar, segs) {
+  return barNodes(bar, segs).filter((x) => x.leaf);
+}
+
+/**
+ * A lane's segments for one bar, with its overrides grafted in.
+ *
+ * @param {Score} score
+ * @param {string} lane
+ * @param {number} barIndex
+ * @returns {RNode[]}
+ */
+export function laneSegs(score, lane, barIndex) {
+  const bar = score.bars[barIndex];
+  const ovs = score.overrides.filter((o) => o.lane === lane && o.bar === barIndex);
+  if (!ovs.length) return bar.segs;
+  const segs = bar.segs.map(cloneNode);
+  for (const o of ovs) graft(segs, o.path, o.node);
+  return segs;
+}
+
+/** @param {RNode[]} segs @param {number[]} path @param {RNode} node */
+function graft(segs, path, node) {
+  let list = segs;
+  for (let d = 0; d < path.length; d++) {
+    const idx = path[d];
+    const target = list[idx];
+    if (!target) throw new RangeError(`override path ${path.join('.')} does not exist`);
+    if (d === path.length - 1) {
+      list[idx] = { ...cloneNode(node), w: target.w };
+      return;
+    }
+    if (!target.kids) target.kids = Array.from({ length: target.n }, () => ({ n: 1, w: 1 }));
+    list = target.kids;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Text form of nodes and bars                                         */
+/* ------------------------------------------------------------------ */
+
+//   node  := INT [ ':' INT ] [ '(' node { ',' node } ')' ] [ '@' INT ]
+//   bar   := INT '/' INT [ '~' INT { '-' INT } ] ':' node { ',' node } [ '*' INT ]
+//
+//   4              four leaves
+//   6:4            six leaves, bracket labelled 6:4
+//   3:2(2,2,5:4)   three slots: two split in 2, the third holds a 5:4
+//   5:4(1,1,1,3:2@2)   five slots; the 3:2 fills slots 4–5
+//   7/8~2-2-3:4,4,6    a 7/8 bar in 16ths (grouping omitted when it's the default)
+//   4/4:4*4            four bars of 4/4 in 16ths (one segment repeats across the groups)
+
+class Cursor {
+  /** @param {string} s */
+  constructor(s) {
+    this.s = s;
+    this.i = 0;
+  }
+  /** @param {string} ch */
+  eat(ch) {
+    if (this.s[this.i] === ch) {
+      this.i++;
+      return true;
+    }
+    return false;
+  }
+  int() {
+    const start = this.i;
+    while (this.i < this.s.length && this.s[this.i] >= '0' && this.s[this.i] <= '9') this.i++;
+    if (start === this.i) {
+      throw new SyntaxError(`expected a number at ${start} in '${this.s}'`);
+    }
+    return Number(this.s.slice(start, this.i));
+  }
+  done() {
+    return this.i >= this.s.length;
+  }
+}
+
+/** @param {Cursor} c @param {number} depth @returns {RNode} */
+function parseNodeAt(c, depth) {
+  if (depth > MAX_DEPTH) throw new SyntaxError(`nested deeper than ${MAX_DEPTH} levels`);
+  const n = c.int();
+  if (n < 1 || n > MAX_SLOTS) throw new SyntaxError(`a split of ${n} is out of range`);
+  /** @type {RNode} */
+  const node = { n, w: 1 };
+  if (c.eat(':')) {
+    node.m = c.int();
+    if (node.m < 1 || node.m > MAX_SLOTS) throw new SyntaxError(`ratio ${n}:${node.m}`);
+  }
+  if (c.eat('(')) {
+    const kids = parseKids(c, depth, n);
+    // Canonical form: n(1,1,…) is just n.
+    if (!kids.every((k) => k.n === 1 && k.w === 1 && !k.m && !k.kids)) node.kids = kids;
+  }
+  if (c.eat('@')) {
+    node.w = c.int();
+    if (node.w < 1) throw new SyntaxError('weight must be at least 1');
+  }
+  return node;
+}
+
+/** After '(': children up to ')', whose weights must fill n slots. @returns {RNode[]} */
+function parseKids(c, depth, n) {
+  const kids = [];
+  do kids.push(parseNodeAt(c, depth + 1));
+  while (c.eat(','));
+  if (!c.eat(')')) throw new SyntaxError(`expected ')' at ${c.i} in '${c.s}'`);
+  const filled = kids.reduce((a, k) => a + k.w, 0);
+  if (filled !== n) throw new SyntaxError(`children of ${n}(…) fill ${filled} slots, not ${n}`);
+  return kids;
+}
+
+/** @param {string} s @returns {RNode} */
+export function parseNode(s) {
+  const c = new Cursor(s);
+  const node = parseNodeAt(c, 0);
+  if (!c.done()) throw new SyntaxError(`unexpected '${s[c.i]}' at ${c.i} in '${s}'`);
+  return node;
+}
+
+/** @param {RNode} node @returns {string} */
+export function formatNode(node) {
+  let s = String(node.n);
+  if (node.m) s += ':' + node.m;
+  if (node.kids) s += '(' + node.kids.map(formatNode).join(',') + ')';
+  if (node.w !== 1) s += '@' + node.w;
+  return s;
+}
+
+const VALID_DENS = new Set([1, 2, 4, 8, 16, 32]);
+
+/**
+ * @param {string} s
+ * @returns {{bar: Bar, count: number}}
+ */
+export function parseBar(s) {
+  const m = /^(\d+)\/(\d+)(?:~(\d+(?:-\d+)*))?:(.+?)(?:\*(\d+))?$/.exec(s);
+  if (!m) throw new SyntaxError(`'${s}' is not a bar (expected like 4/4:4)`);
+  const num = Number(m[1]);
+  const den = Number(m[2]);
+  if (num < 1 || num > 64) throw new SyntaxError(`meter ${num}/${den}: numerator out of range`);
+  if (!VALID_DENS.has(den)) throw new SyntaxError(`meter ${num}/${den}: denominator out of range`);
+  const groups = m[3] ? m[3].split('-').map(Number) : defaultGroups(num, den);
+  if (groups.some((g) => g < 1) || groups.reduce((a, b) => a + b, 0) !== num) {
+    throw new SyntaxError(`grouping ${groups.join('+')} doesn't add up to ${num}`);
+  }
+  const c = new Cursor(m[4]);
+  let segs = [];
+  do segs.push(parseNodeAt(c, 0));
+  while (c.eat(','));
+  if (!c.done()) throw new SyntaxError(`unexpected '${m[4][c.i]}' in bar '${s}'`);
+  if (segs.length === 1 && segs[0].w === 1 && groups.length > 1) {
+    segs = groups.map(() => cloneNode(segs[0]));
+  }
+  const used = segs.reduce((a, sg) => a + sg.w, 0);
+  if (used !== groups.length) {
+    throw new SyntaxError(`segments cover ${used} beat groups; ${num}/${den} has ${groups.length}`);
+  }
+  const bar = { num, den, groups, segs };
+  const leaves = barLeaves(bar).length;
+  if (leaves > MAX_LEAVES_PER_BAR) throw new SyntaxError(`${leaves} slots in one bar is too many`);
+  return { bar, count: m[5] ? Math.max(1, Number(m[5])) : 1 };
+}
+
+/** @param {Bar} bar @param {number} [count] @returns {string} */
+export function formatBar(bar, count = 1) {
+  const dflt = defaultGroups(bar.num, bar.den);
+  const sameGroups = dflt.length === bar.groups.length && dflt.every((g, i) => g === bar.groups[i]);
+  const segs = bar.segs.map(formatNode);
+  const repeated =
+    segs.length > 1 &&
+    segs.length === bar.groups.length &&
+    segs.every((x) => x === segs[0]) &&
+    bar.segs.every((sg) => sg.w === 1);
+  return (
+    `${bar.num}/${bar.den}` +
+    (sameGroups ? '' : '~' + bar.groups.join('-')) +
+    ':' +
+    (repeated ? segs[0] : segs.join(',')) +
+    (count > 1 ? '*' + count : '')
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane hit strings                                                    */
+/* ------------------------------------------------------------------ */
+
+// One char per leaf, '-' = rest. Runs of 3+ rests compress to '-N'. A bar that
+// is all rests is empty; a bar identical to the previous one is '.'. Bars are
+// separated by ';' and trailing empty bars are dropped.
+
+/** @param {string} s */
+function rle(s) {
+  return s.replace(/-{3,}/g, (run) => '-' + run.length);
+}
+
+/** @param {string} s */
+function unrle(s) {
+  return s.replace(/-(\d+)/g, (_, k) => '-'.repeat(Math.min(Number(k), MAX_LEAVES_PER_BAR)));
+}
+
+/** @param {string[]} strs */
+function encodeLane(strs) {
+  const parts = strs.map((s, i) => {
+    if (!/[^-]/.test(s)) return '';
+    if (i > 0 && s === strs[i - 1]) return '.';
+    return rle(s);
+  });
+  while (parts.length && parts[parts.length - 1] === '') parts.pop();
+  return parts.join(';');
+}
+
+/* ------------------------------------------------------------------ */
+/* URL codec                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Encode a score as a URL fragment (without the leading '#').
+ *
+ * @param {Score} score
+ * @returns {string}
+ */
+export function encode(score) {
+  const p = ['v=2'];
+  if (score.title) p.push('t=' + encodeURIComponent(score.title));
+  if (score.author) p.push('a=' + encodeURIComponent(score.author));
+  if (score.comments) p.push('c=' + encodeURIComponent(score.comments));
+  p.push('q=' + score.tempo);
+  if (score.swing) p.push('sw=' + score.swing);
+
+  const bars = [];
+  for (let i = 0; i < score.bars.length;) {
+    const s = formatBar(score.bars[i]);
+    let k = 1;
+    while (i + k < score.bars.length && formatBar(score.bars[i + k]) === s) k++;
+    bars.push(formatBar(score.bars[i], k));
+    i += k;
+  }
+  p.push('b=' + bars.join(';'));
+
+  if (score.tempoChanges.length) {
+    p.push(
+      'tc=' + score.tempoChanges.map((c) => `${c.bar}:${rstr(c.unit)}~${rstr(c.old)}`).join(';')
+    );
+  }
+  if (score.overrides.length) {
+    p.push(
+      'ov=' +
+        score.overrides
+          .map(
+            (o) => `${o.lane}@${[o.bar, ...o.path].join('.')}!${formatNode({ ...o.node, w: 1 })}`
+          )
+          .join(';')
+    );
+  }
+  const lanes = [
+    ...LANE_ORDER.filter((id) => score.hits[id]),
+    ...Object.keys(score.hits)
+      .filter((id) => !(id in LANES))
+      .sort(),
+  ];
+  for (const id of lanes) {
+    const v = encodeLane(score.hits[id]);
+    if (v) p.push(id + '=' + v);
+  }
+  return p.join('&');
+}
+
+/** @typedef {{level: ('error'|'warn'), msg: string}} Issue */
+
+/** @param {string} s */
+function safeDecode(s) {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
+/** @param {string} body @returns {Map<string, string>} */
+function parseParams(body) {
+  const map = new Map();
+  for (const part of body.split('&')) {
+    if (!part) continue;
+    const eq = part.indexOf('=');
+    const key = eq < 0 ? part : part.slice(0, eq);
+    map.set(key, eq < 0 ? '' : part.slice(eq + 1));
+  }
+  return map;
+}
+
+const LEGACY_KEYS = new Set(['timesig', 'div', 'h', 's', 'k', 'measures']);
+
+/**
+ * The part of a URL that holds the groove: a v2 fragment wins, then the query
+ * string (legacy links, or v2 sent as a query), then the input itself.
+ *
+ * @param {string} s
+ */
+function grooveBody(s) {
+  const hashAt = s.indexOf('#');
+  const qAt = s.indexOf('?');
+  const hash = hashAt >= 0 ? s.slice(hashAt + 1) : '';
+  if (hashAt >= 0 && /(^|&)v=2(&|$)/.test(hash)) return hash;
+  if (qAt < 0) return hashAt >= 0 ? hash : s;
+  return hashAt > qAt ? s.slice(qAt + 1, hashAt) : s.slice(qAt + 1);
+}
+
+/**
+ * Run `fn` on each ';'-separated item of a field; a throw goes to `onError`
+ * and the next item is still read.
+ *
+ * @param {string|undefined} raw
+ * @param {(item: string) => void} fn
+ * @param {(e: Error) => void} onError
+ */
+function eachItem(raw, fn, onError) {
+  for (const item of safeDecode(raw ?? '').split(';')) {
+    if (!item) continue;
+    try {
+      fn(item);
+    } catch (e) {
+      onError(e);
+    }
+  }
+}
+
+/** @param {Score} score @param {Map<string, string>} params @param {Issue[]} issues */
+function decodeMeta(score, params, issues) {
+  score.title = safeDecode(params.get('t') ?? '');
+  score.author = safeDecode(params.get('a') ?? '');
+  score.comments = safeDecode(params.get('c') ?? '');
+  const q = Number(safeDecode(params.get('q') ?? '80'));
+  if (Number.isFinite(q) && q >= 10 && q <= 999) score.tempo = q;
+  else issues.push({ level: 'warn', msg: `tempo '${params.get('q')}' out of range; using 80` });
+  const sw = Number(params.get('sw') ?? 0);
+  score.swing = Number.isFinite(sw) && sw >= 0 && sw <= 100 ? sw : 0;
+}
+
+/** @param {Score} score @param {string|undefined} raw @param {Issue[]} issues */
+function decodeBars(score, raw, issues) {
+  score.bars = [];
+  eachItem(
+    raw ?? '4/4:4',
+    (spec) => {
+      const { bar, count } = parseBar(spec);
+      for (let k = 0; k < count && score.bars.length < MAX_BARS; k++) {
+        score.bars.push({ ...bar, groups: [...bar.groups], segs: bar.segs.map(cloneNode) });
+      }
+    },
+    (e) => {
+      issues.push({ level: 'error', msg: `${e.message}; replaced with 4/4 in 16ths` });
+      score.bars.push(defaultBar(4, 4));
+    }
+  );
+  if (!score.bars.length) score.bars.push(defaultBar(4, 4));
+}
+
+/** @param {Score} score @param {string|undefined} raw @param {Issue[]} issues */
+function decodeTempoChanges(score, raw, issues) {
+  eachItem(
+    raw,
+    (tc) => {
+      const m = /^(\d+):([\d/]+)~([\d/]+)$/.exec(tc);
+      if (!m) throw new SyntaxError(`'${tc}' is not bar:unit~old`);
+      score.tempoChanges.push({ bar: Number(m[1]), unit: parseRat(m[2]), old: parseRat(m[3]) });
+    },
+    (e) => issues.push({ level: 'warn', msg: `tempo change ignored: ${e.message}` })
+  );
+}
+
+/** @param {Score} score @param {string|undefined} raw @param {Issue[]} issues */
+function decodeOverrides(score, raw, issues) {
+  eachItem(
+    raw,
+    (ov) => {
+      const m = /^([a-z][a-z0-9]*)@(\d+(?:\.\d+)+)!(.+)$/.exec(ov);
+      if (!m) throw new SyntaxError(`'${ov}' is not lane@bar.path!node`);
+      const [bar, ...path] = m[2].split('.').map(Number);
+      if (bar >= score.bars.length) throw new RangeError(`bar ${bar} doesn't exist`);
+      const o = { lane: m[1], bar, path, node: parseNode(m[3]) };
+      laneSegs({ ...score, overrides: [...score.overrides, o] }, o.lane, o.bar); // throws on a bad path
+      score.overrides.push(o);
+    },
+    (e) => issues.push({ level: 'warn', msg: `override ignored: ${e.message}` })
+  );
+}
+
+/**
+ * One bar of one lane: expand '-N' runs and '.', turn letters the lane doesn't
+ * know into rests, and fit the string to the lane's slot count.
+ *
+ * @param {{key: string, b: number, want: number, allowed: (string|null)}} at
+ * @param {string} part
+ * @param {string} prev  The previous bar's decoded string, for '.'.
+ * @param {Issue[]} issues
+ */
+function decodeLaneBar(at, part, prev, issues) {
+  const { key, b, want, allowed } = at;
+  let str = part === '.' ? prev : unrle(part);
+  const bad = allowed ? [...str].filter((ch) => !allowed.includes(ch)) : [];
+  if (bad.length) {
+    issues.push({ level: 'warn', msg: `${key} bar ${b}: '${bad.join('')}' not valid; made rests` });
+    str = [...str].map((ch) => (allowed.includes(ch) ? ch : '-')).join('');
+  }
+  if (str.length !== want && part !== '') {
+    const fix = str.length > want ? 'cut' : 'padded';
+    issues.push({
+      level: 'warn',
+      msg: `${key} bar ${b}: ${str.length} hits for ${want} slots; ${fix}`,
+    });
+  }
+  return (str + '-'.repeat(want)).slice(0, want);
+}
+
+/** @param {Score} score @param {string} key @param {string} raw @param {Issue[]} issues */
+function decodeLane(score, key, raw, issues) {
+  const known = LANES[key];
+  if (!known) issues.push({ level: 'warn', msg: `custom lane '${key}' kept as-is` });
+  const allowed = known ? known.chars + '-' : null;
+  const parts = safeDecode(raw).split(';');
+  if (parts.length > score.bars.length) {
+    issues.push({
+      level: 'warn',
+      msg: `${key}: hits for ${parts.length} bars, groove has ${score.bars.length}`,
+    });
+  }
+  /** @type {string[]} */
+  const strs = [];
+  for (let b = 0; b < score.bars.length; b++) {
+    const want = barLeaves(score.bars[b], laneSegs(score, key, b)).length;
+    strs.push(decodeLaneBar({ key, b, want, allowed }, parts[b] ?? '', strs[b - 1] ?? '', issues));
+  }
+  score.hits[key] = strs;
+}
+
+/**
+ * Decode a v2 fragment, a full URL, or a legacy Groove Scribe query string.
+ * Never throws for bad input: problems come back as issues, and whatever could
+ * be read is kept.
+ *
+ * @param {string} input
+ * @returns {{score: Score, issues: Issue[], legacy: boolean}}
+ */
+export function decode(input) {
+  /** @type {Issue[]} */
+  const issues = [];
+  const params = parseParams(grooveBody(String(input).trim()));
+  if (params.get('v') !== '2') {
+    const keys = [...params.keys()].map((k) => k.toLowerCase());
+    if (keys.some((k) => LEGACY_KEYS.has(k))) {
+      return { score: fromLegacy(params, issues), issues, legacy: true };
+    }
+    issues.push({ level: 'warn', msg: 'no v=2 and no Groove Scribe fields; starting empty' });
+    return { score: emptyScore(), issues, legacy: false };
+  }
+
+  const score = emptyScore();
+  decodeMeta(score, params, issues);
+  decodeBars(score, params.get('b'), issues);
+  decodeTempoChanges(score, params.get('tc'), issues);
+  // Overrides before hits: they change how many leaves a lane has.
+  decodeOverrides(score, params.get('ov'), issues);
+  for (const [key, raw] of params) {
+    if (META_KEYS.has(key)) continue;
+    if (/^[a-z][a-z0-9]{1,5}$/.test(key)) decodeLane(score, key, raw, issues);
+    else issues.push({ level: 'warn', msg: `unknown field '${key}' ignored` });
+  }
+  return { score, issues, legacy: false };
+}
+
+/* ------------------------------------------------------------------ */
+/* Legacy Groove Scribe import                                         */
+/* ------------------------------------------------------------------ */
+
+/** Groove Scribe tab letter → [lane, char] pairs, per legacy field. */
+const LEGACY_MAP = {
+  H: {
+    x: [['hh', 'x']],
+    X: [['hh', 'X']],
+    o: [['hh', 'o']],
+    '+': [['hh', '+']],
+    c: [['cr', 'x']],
+    r: [['rd', 'x']],
+    R: [['rd', 'x']],
+    b: [['rd', 'b']],
+    B: [['rd', 'b']],
+    s: [['sk', 'x']],
+    m: [['cb', 'x']],
+    n: [['mt', 'n']],
+    N: [['mt', 'N']],
+  },
+  S: {
+    o: [['sn', 'o']],
+    O: [['sn', 'O']],
+    g: [['sn', 'g']],
+    x: [['sn', 'x']],
+    f: [['sn', 'f']],
+    d: [['sn', 'd']],
+    b: [['sn', 'b']],
+    B: [['sn', 'b']],
+  },
+  K: {
+    o: [['kk', 'o']],
+    x: [['hf', 'x']],
+    X: [
+      ['kk', 'o'],
+      ['hf', 'x'],
+    ],
+  },
+  T1: { o: [['t1', 'o']], x: [['t1', 'o']] },
+  T2: { o: [['t2', 'o']] },
+  T3: { o: [['t3', 'o']] },
+  T4: { o: [['t4', 'o']], x: [['t4', 'o']] },
+  Stickings: {
+    R: [['st', 'R']],
+    r: [['st', 'R']],
+    L: [['st', 'L']],
+    l: [['st', 'L']],
+    B: [['st', 'B']],
+    b: [['st', 'B']],
+    c: [['st', 'c']],
+  },
+};
+
+/** Mirrors noteArraysFromURLData's tolerant re-scaling of over/under-long tab lines. */
+function legacyCells(raw, size) {
+  const notes = safeDecode(raw).replace(/[:!)([\]|]/g, '');
+  let take = 1;
+  let spread = 1;
+  if (notes.length > size && notes.length / size >= 2) take = Math.ceil(notes.length / size);
+  else if (notes.length < size && size / notes.length >= 2) spread = Math.ceil(size / notes.length);
+  const cells = Array(size).fill('-');
+  for (let j = 0, k = 0; j < notes.length && k < size; j += take, k += spread) cells[k] = notes[j];
+  return cells;
+}
+
+/**
+ * Convert a Groove Scribe query (TimeSig, Div, Measures, H, S, K, T1–T4,
+ * Stickings, Title, Author, Comments, Tempo, Swing) to a v2 score. Field names
+ * are case-insensitive, as in getQueryVariableFromString.
+ *
+ * @param {Map<string, string>} params
+ * @param {Issue[]} issues
+ * @returns {Score}
+ */
+export function fromLegacy(params, issues = []) {
+  const get = (name, dflt) => {
+    for (const [k, v] of params) if (k.toLowerCase() === name.toLowerCase()) return v;
+    return dflt;
+  };
+  const score = emptyScore();
+  const [tsTop, tsBottom] = String(get('TimeSig', '4/4')).split('/').map(Number);
+  const num = tsTop >= 1 && tsTop <= 32 ? tsTop : 4;
+  const den = [2, 4, 8, 16].includes(tsBottom) ? tsBottom : 4;
+  const div = Number.parseInt(get('Div', '16'), 10) || 16;
+  let measures = Number.parseInt(get('Measures', '1'), 10);
+  if (Number.isNaN(measures) || measures < 1) measures = 1;
+  if (measures > 10) measures = 10;
+
+  let perBar = (div / den) * num;
+  if (!Number.isInteger(perBar)) {
+    issues.push({ level: 'warn', msg: `Div=${div} doesn't divide ${num}/${den} evenly; rounded` });
+    perBar = Math.max(1, Math.round(perBar));
+  }
+  const groups = defaultGroups(num, den);
+  const per = groups.map((g) => (perBar * g) / num);
+  const bar = per.every(Number.isInteger)
+    ? { num, den, groups, segs: per.map((n) => ({ n, w: 1 })) }
+    : { num, den, groups, segs: [{ n: perBar, w: groups.length }] };
+  score.bars = Array.from({ length: measures }, () => ({
+    ...bar,
+    groups: [...groups],
+    segs: bar.segs.map(cloneNode),
+  }));
+
+  const text = (k) => {
+    const v = get(k, '');
+    return v ? safeDecode(v).replace(/\+/g, ' ') : '';
+  };
+  score.title = text('Title');
+  score.author = text('Author');
+  score.comments = text('Comments');
+  const tempo = Number.parseInt(get('Tempo', '80'), 10);
+  score.tempo = tempo >= 20 && tempo <= 400 ? tempo : 80;
+  const swing = Number.parseInt(get('Swing', '0'), 10);
+  score.swing = swing >= 0 && swing <= 100 ? swing : 0;
+
+  const rows = {};
+  for (const field of Object.keys(LEGACY_MAP)) {
+    const raw = get(field, '');
+    if (!raw) continue;
+    const cells = legacyCells(raw, perBar * measures);
+    cells.forEach((ch, i) => {
+      if (ch === '-') return;
+      const targets = LEGACY_MAP[field][ch];
+      if (!targets) {
+        issues.push({ level: 'warn', msg: `${field}: tab letter '${ch}' unknown; dropped` });
+        return;
+      }
+      for (const [lane, art] of targets) {
+        rows[lane] ??= Array(perBar * measures).fill('-');
+        rows[lane][i] = art;
+      }
+    });
+  }
+  for (const [lane, cells] of Object.entries(rows)) {
+    score.hits[lane] = Array.from({ length: measures }, (_, b) =>
+      cells.slice(b * perBar, (b + 1) * perBar).join('')
+    );
+  }
+  return score;
+}
+
+/* ------------------------------------------------------------------ */
+/* Playback and MIDI resolution                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * @typedef {Object} PlayEvent
+ * @property {number} t     Seconds from the start of the groove.
+ * @property {string} lane
+ * @property {string} art   Articulation char.
+ * @property {number} bar
+ * @property {number} leaf
+ */
+
+/**
+ * Flatten a score into time-sorted events for a Web Audio scheduler. Exact
+ * rationals until the last step, so long loops of nested tuplets don't drift.
+ *
+ * @param {Score} score
+ * @returns {{events: PlayEvent[], duration: number}}
+ */
+export function compileEvents(score) {
+  /** @type {PlayEvent[]} */
+  const events = [];
+  const changes = new Map(score.tempoChanges.map((c) => [c.bar, c]));
+  let tempo = score.tempo;
+  let t0 = 0;
+  const lanes = Object.keys(score.hits);
+  score.bars.forEach((bar, b) => {
+    const tc = changes.get(b);
+    if (tc) tempo = (tempo * rnum(tc.unit)) / rnum(tc.old);
+    const spq = 60 / tempo;
+    for (const lane of lanes) {
+      const s = score.hits[lane][b];
+      if (!s || !/[^-]/.test(s)) continue;
+      const leaves = barLeaves(bar, laneSegs(score, lane, b));
+      for (let i = 0; i < s.length && i < leaves.length; i++) {
+        if (s[i] !== '-') {
+          events.push({ t: t0 + rnum(leaves[i].start) * spq, lane, art: s[i], bar: b, leaf: i });
+        }
+      }
+    }
+    t0 += rnum(barLength(bar)) * spq;
+  });
+  events.sort((x, y) => x.t - y.t || LANE_ORDER.indexOf(x.lane) - LANE_ORDER.indexOf(y.lane));
+  return { events, duration: t0 };
+}
+
+/**
+ * The MIDI ticks-per-quarter that puts every onset on an integer tick.
+ * Groove Scribe writes 128 PPQ today, which can't place a 16th-note triplet
+ * (it uses 10.666 ticks). `exact` is the minimum; `ppq` is the smallest
+ * multiple of it that is at least 480, and `fits` says whether it is within
+ * the 15-bit limit of a MIDI header.
+ *
+ * @param {Score} score
+ * @returns {{exact: number, ppq: number, fits: boolean}}
+ */
+export function midiResolution(score) {
+  let l = 1;
+  score.bars.forEach((bar, b) => {
+    const lanes = Object.keys(score.hits);
+    const segSets = lanes.length ? lanes.map((lane) => laneSegs(score, lane, b)) : [bar.segs];
+    for (const segs of segSets) {
+      for (const leaf of barLeaves(bar, segs)) l = lcm(l, leaf.start[1]);
+    }
+    l = lcm(l, barLength(bar)[1]);
+  });
+  const ppq = l * Math.ceil(480 / l);
+  return { exact: l, ppq, fits: ppq <= 32767 };
+}
+
+// ---- page ----
+
+const ART = {
+  hh: { x: 'closed', X: 'accent', o: 'open', '+': 'closed mark' },
+  hf: { x: 'pedal' },
+  cr: { x: 'hit', X: 'accent' },
+  rd: { x: 'bow', X: 'accent', b: 'bell' },
+  sk: { x: 'hit' },
+  cb: { x: 'hit' },
+  sn: { o: 'normal', O: 'accent', g: 'ghost', x: 'cross-stick', f: 'flam', d: 'drag', b: 'buzz' },
+  t1: { o: 'normal', O: 'accent' },
+  t2: { o: 'normal', O: 'accent' },
+  t3: { o: 'normal', O: 'accent' },
+  t4: { o: 'normal', O: 'accent' },
+  kk: { o: 'normal', O: 'accent' },
+  mt: { n: 'click', N: 'accent click' },
+  st: { R: 'right', L: 'left', B: 'both', c: 'count' },
+};
+
+const NOTE_NAME = {
+  '4': 'whole', '3': 'dotted half', '2': 'half', '3/2': 'dotted quarter', '1': 'quarter',
+  '3/4': 'dotted 8th', '1/2': '8th', '3/8': 'dotted 16th', '1/4': '16th', '1/8': '32nd', '1/16': '64th',
+};
+const NOTE_GLYPH = { '1': '♩', '1/2': '♪', '1/4': '♬', '3/2': '♩.', '3/4': '♪.' };
+const noteName = (r) => NOTE_NAME[rstr(r)] || rstr(r) + ' ♩';
+
+function editorScore() {
+  const s = emptyScore();
+  s.title = 'Bars 1–2';
+  s.tempo = 96;
+  s.bars = [parseBar('4/4:4,4,4,6').bar, parseBar('7/8:4,4,6').bar];
+  s.hits = {
+    cr: ['-'.repeat(18), 'x' + '-'.repeat(13)],
+    hh: ['x-x-x-x-x-x-------', '--x-x-x-x-x-x-'],
+    sn: ['----o--g----Ooo---', '----o-------o-'],
+    t1: ['---------------oo-', '-'.repeat(14)],
+    t4: ['-'.repeat(17) + 'o', '-'.repeat(14)],
+    kk: ['o-o-----oo--------', 'o-------o-o---'],
+  };
+  return s;
+}
+function polyScore() {
+  const s = emptyScore();
+  s.title = 'Five over four';
+  s.tempo = 96;
+  s.bars = [parseBar('4/4:4,4,4,3').bar];
+  s.overrides = [{ lane: 'hh', bar: 0, path: [2], node: parseNode('5') }];
+  s.hits = { hh: ['xxxxxxxxxxxxx---'], sn: ['----o-----o-Ooo'], kk: ['o--o--o-o--oo--'] };
+  return s;
+}
+function tupletScore() {
+  const s = emptyScore();
+  s.title = 'Nested tuplets';
+  s.tempo = 90;
+  s.bars = [parseBar('4/4:3:2(2,2,5:4)@2,5:4(1,1,1,3:2@2)@2').bar];
+  s.hits = { sn: ['o'.repeat(15)], kk: ['o--------o-----'] };
+  return s;
+}
+function mixedScore() {
+  const s = emptyScore();
+  s.title = 'Meter tour';
+  s.tempo = 120;
+  s.bars = ['4/4:4', '7/8:4,4,6', '5/8~3-2:6,4', '6/8:6', '6/8:6'].map((b) => parseBar(b).bar);
+  s.tempoChanges = [{ bar: 3, unit: rat(3, 2), old: rat(1) }];
+  s.hits = {
+    hh: ['x-x-x-x-x-x-x-x-', 'x-x-x-x-x-x-x-', 'x-x-x-x-x-', 'x--x--x--x--', '.'],
+    sn: ['----o-------o---', '----o-------o-', '------o---', '------o-----', '------o--o-o'],
+    kk: ['o-------o-o-----', 'o-------o-o---', 'o-----o---', 'o-----------', 'o-----------'],
+  };
+  s.hits.hh[4] = s.hits.hh[3];
+  return s;
+}
+const LEGACY_EXAMPLE =
+  'https://www.mikeslessons.com/groove/?TimeSig=4/4&Div=16&Title=Basic%20Rock&Tempo=90&Measures=2' +
+  '&H=|x-x-x-x-x-x-x-x-|c-x-x-x-x-x-x-x-|&S=|----O-------O---|----O-------O--g|' +
+  '&K=|o-------o-o-----|X-------o-------|';
+
+const PRESETS = [
+  { id: 'editor', label: 'Editor bars (4/4 → 7/8)', make: editorScore },
+  { id: 'poly', label: 'Five over four', make: polyScore },
+  { id: 'tuplets', label: 'Nested tuplets', make: tupletScore },
+  { id: 'meters', label: 'Meter tour with ♩. = ♩', make: mixedScore },
+  { id: 'legacy', label: 'Imported old link', make: () => decode(LEGACY_EXAMPLE).score },
+];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+const state = { score: null, issues: [], bar: 0, path: '0', preset: 'editor', legacy: false };
+
+function laneIds(score) {
+  return [...LANE_ORDER.filter((id) => score.hits[id]), ...Object.keys(score.hits).filter((id) => !(id in LANES))];
+}
+
+function nodeAt(segs, path) {
+  let node = segs[path[0]];
+  for (let i = 1; i < path.length && node; i++) node = node.kids ? node.kids[path[i]] : null;
+  return node || null;
+}
+
+function load(score, issues = []) {
+  state.score = score;
+  state.issues = issues;
+  if (state.bar >= score.bars.length) state.bar = 0;
+  const nodes = barNodes(score.bars[state.bar]);
+  if (!nodes.some((n) => n.path.join('.') === state.path)) state.path = '0';
+}
+
+function setFragFromScore() {
+  $('frag').value = encode(state.score);
+}
+
+/* ---------- playground rendering ---------- */
+
+function renderPresets() {
+  $('presets').innerHTML = PRESETS.map(
+    (p) => `<button type="button" class="chip" data-preset="${p.id}" aria-pressed="${p.id === state.preset}">${esc(p.label)}</button>`
+  ).join('');
+}
+
+function renderStats() {
+  const s = state.score;
+  const frag = $('frag').value.trim().replace(/^#/, '');
+  const slots = s.bars.reduce((a, b) => a + barLeaves(b).length, 0);
+  const { duration, events } = compileEvents(s);
+  const res = midiResolution(s);
+  const cells = [
+    ['Link', `${frag.length} chars`],
+    ['Bars', String(s.bars.length)],
+    ['Slots', String(slots)],
+    ['Hits', String(events.length)],
+    ['Loop', `${duration.toFixed(2)} s`],
+    ['MIDI PPQ', `${res.ppq}${res.exact > 1 ? ' (÷' + res.exact + ')' : ''}`],
+  ];
+  $('stats').innerHTML = cells.map(([k, v]) => `<div class="stat"><dt>${k}</dt><dd title="${esc(v)}">${esc(v)}</dd></div>`).join('');
+}
+
+function renderIssues() {
+  const list = state.issues;
+  if (list.length) {
+    $('issues').innerHTML = list
+      .map((i) => `<li class="${i.level}"><span class="tag">${i.level === 'error' ? 'error' : 'warn'}</span><span>${esc(i.msg)}</span></li>`)
+      .join('');
+    return;
+  }
+  const frag = $('frag').value.trim().replace(/^#/, '');
+  const same = encode(decode('#' + frag).score) === frag;
+  const from = state.legacy ? ' (converted from an old link)' : '';
+  $('issues').innerHTML = `<li class="ok">Reads cleanly${from}. ${same ? 'Re-encoding gives back exactly this text.' : 'Re-encoding writes it in canonical form, shown after your next edit.'}</li>`;
+}
+
+function renderBarTabs() {
+  $('barTabs').innerHTML = state.score.bars
+    .map((b, i) => `<button type="button" role="tab" class="bar-tab" data-bar="${i}" aria-selected="${i === state.bar}"><span class="num">${i + 1}</span>${b.num}/${b.den}</button>`)
+    .join('');
+  const bar = state.score.bars[state.bar];
+  $('barText').textContent = 'Bar text: ' + formatBar(bar) + '   ·   grouping ' + bar.groups.join('+') + (bar.den <= 4 ? ' (beats)' : ` (in 1/${bar.den})`);
+}
+
+function pct(r, len) {
+  return ((rnum(r) / rnum(len)) * 100).toFixed(4) + '%';
+}
+
+function groupEdges(bar) {
+  const edges = [];
+  let acc = rat(0);
+  bar.groups.forEach((g) => {
+    edges.push(acc);
+    acc = radd(acc, rat(g * 4, bar.den));
+  });
+  return edges;
+}
+
+function glines(bar, len) {
+  return groupEdges(bar)
+    .slice(1)
+    .map((e) => `<span class="gline" style="left:${pct(e, len)}"></span>`)
+    .join('');
+}
+
+function renderTree() {
+  const s = state.score;
+  const b = state.bar;
+  const bar = s.bars[b];
+  const len = barLength(bar);
+  const nodes = barNodes(bar);
+  const sel = nodes.find((n) => n.path.join('.') === state.path) || nodes[0];
+  const selEnd = radd(sel.start, sel.span);
+  const ROW = 34;
+  const depth = Math.max(...nodes.map((n) => n.depth)) + 1;
+  const unit = bar.den === 8 ? '♪' : bar.den === 16 ? '♬' : bar.den === 4 ? '♩' : '';
+
+  // Ruler: beat groups
+  const edges = groupEdges(bar);
+  const ruler = bar.groups
+    .map((g, i) => {
+      const start = edges[i];
+      const span = rat(g * 4, bar.den);
+      const label = bar.den <= 4 ? `${i + 1}` : `${i + 1}<small>${g}${unit}</small>`;
+      return `<span class="ruler-seg" style="left:${pct(start, len)};width:${pct(span, len)}">${label}</span>`;
+    })
+    .join('');
+
+  // Icicle
+  const icicle = nodes
+    .map((n) => {
+      const key = n.path.join('.');
+      const rn = nodeAt(bar.segs, n.path);
+      let cls = 'node';
+      let label = '';
+      if (n.tuplet) {
+        cls += ' tup';
+        const m = n.tuplet.m ? `${n.tuplet.n}:${n.tuplet.m}` : `${n.tuplet.n}`;
+        label = rn && rn.m ? m : `<span class="inferred">${m}</span>`;
+      } else if (n.leaf) {
+        cls += ' leaf';
+        label = NOTE_GLYPH[rstr(n.written)] || '';
+      } else {
+        label = `÷${n.n}`;
+      }
+      if (key === state.path) cls += ' sel';
+      const aria = `${n.leaf ? 'Slot' : n.tuplet ? 'Tuplet' : 'Split'} at ${key}, starts ${rstr(n.start)} quarter, lasts ${rstr(n.span)}`;
+      return `<button type="button" class="${cls}" data-path="${key}" aria-label="${esc(aria)}" style="left:calc(${pct(n.start, len)} + 1px);width:calc(${pct(n.span, len)} - 2px);top:${n.depth * ROW + 3}px;height:${ROW - 6}px">${label}</button>`;
+    })
+    .join('');
+
+  // Lanes
+  const lanes = laneIds(s)
+    .map((lane) => {
+      const segs = laneSegs(s, lane, b);
+      const leaves = barLeaves(bar, segs);
+      const hits = s.hits[lane][b] || '';
+      const own = segs !== bar.segs;
+      const meta = LANES[lane];
+      const cells = leaves
+        .map((leaf, i) => {
+          const ch = hits[i] || '-';
+          const on = ch !== '-';
+          const inSel = rcmp(leaf.start, sel.start) >= 0 && rcmp(leaf.start, selEnd) < 0;
+          const accent = on && ch !== ch.toLowerCase() && ch !== '+' && lane !== 'st';
+          const what = on ? (ART[lane] && ART[lane][ch]) || ch : 'rest';
+          const cls = `cell${on ? ' on' : ''}${accent ? ' accent' : ''}${inSel ? ' in-sel' : ''}`;
+          return `<button type="button" class="${cls}" data-lane="${lane}" data-i="${i}" aria-label="${esc((meta ? meta.name : lane) + ', slot ' + (i + 1) + ': ' + what)}" style="left:calc(${pct(leaf.start, len)} + 1px);width:calc(${pct(leaf.span, len)} - 2px)">${on ? esc(ch) : '·'}</button>`;
+        })
+        .join('');
+      return `<div class="trow"><div class="tlab"><b>${esc(meta ? meta.name : lane)}</b><span class="lane-id">${lane}${own ? ' · <span class="own">own split</span>' : ''}</span></div><div class="ttime" style="height:40px">${glines(bar, len)}${cells}</div></div>`;
+    })
+    .join('');
+
+  $('tree').innerHTML =
+    `<div class="trow"><div class="tlab"><b>Groups</b></div><div class="ttime" style="height:32px">${glines(bar, len)}${ruler}</div></div>` +
+    `<div class="trow"><div class="tlab"><b>Tree</b><span>${depth} level${depth > 1 ? 's' : ''}</span></div><div class="ttime" style="height:${depth * ROW}px">${glines(bar, len)}${icicle}</div></div>` +
+    lanes;
+
+  renderDetail(bar, sel);
+}
+
+function renderDetail(bar, n) {
+  const s = state.score;
+  const rn = nodeAt(bar.segs, n.path);
+  const msq = 60000 / s.tempo;
+  const kind = n.leaf ? 'Slot' : n.tuplet ? 'Tuplet' : 'Even split';
+  const ratio = n.tuplet ? (n.tuplet.m ? `${n.tuplet.n}:${n.tuplet.m}` : `${n.tuplet.n}`) : '';
+  const head = `${kind}${ratio ? ' ' + ratio : !n.leaf ? ' into ' + n.n : ''}`;
+  const where = n.path.length === 1 ? `segment ${n.path[0] + 1}` : `segment ${n.path[0] + 1}, child ${n.path.slice(1).map((x) => x + 1).join(' › ')}`;
+  const items = [
+    ['Path', `${n.path.join('.')} · ${where}`],
+    ['Starts', `${rstr(n.start)} ♩ · ${(rnum(n.start) * msq).toFixed(1)} ms`],
+    ['Lasts', `${rstr(n.span)} ♩ · ${(rnum(n.span) * msq).toFixed(1)} ms`],
+    ['Written as', `${rstr(n.written)} ♩ · ${noteName(n.written)}`],
+  ];
+  if (!n.leaf) {
+    const slot = n.tuplet ? n.tuplet.w : rdiv(n.written, rat(n.n));
+    items.push(['Each slot written', `${noteName(slot)}${n.tuplet ? (rn && rn.m ? ' · ratio given' : ' · ratio inferred') : ''}`]);
+  }
+  items.push(['Text', rn ? formatNode(rn) : '1 (implicit leaf)']);
+  $('detail').innerHTML =
+    `<div class="detail-head"><h3>${esc(head)}</h3><span class="muted">Bar ${state.bar + 1} · times from the top of the bar at ${s.tempo} ♩/min</span></div>` +
+    `<dl>${items.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
+}
+
+/* ---------- reference rendering ---------- */
+
+function renderMatrix() {
+  const spans = [
+    ['8th', '♪', rat(1, 2)],
+    ['Quarter', '♩', rat(1)],
+    ['Dotted quarter', '♩.', rat(3, 2)],
+    ['Two beats', '𝅗𝅥 half', rat(2)],
+    ['Dotted half', '♩.♩. ', rat(3)],
+  ];
+  const ns = [2, 3, 4, 5, 6, 7, 8, 9];
+  const head = `<thead><tr><th scope="col">Span ↓ · split into →</th>${ns.map((n) => `<th scope="col">${n}</th>`).join('')}</tr></thead>`;
+  const body = spans
+    .map(([name, , span]) => {
+      const cells = ns
+        .map((n) => {
+          const t = tupletFor(span, n);
+          if (!t) return `<td class="plain">${esc(noteName(rdiv(span, rat(n))))}<small>plain</small></td>`;
+          return `<td class="tup"><b>${t.m ? t.n + ':' + t.m : t.n}</b><small>${esc(noteName(t.w))}</small></td>`;
+        })
+        .join('');
+      return `<tr><th scope="row">${name}<small>${rstr(span)} ♩</small></th>${cells}</tr>`;
+    })
+    .join('');
+  $('matrix').innerHTML = head + `<tbody>${body}</tbody>`;
+}
+
+const FIELD_INFO = {
+  v: '<b>Version.</b> Absent means an old Groove Scribe link.',
+  t: '<b>Title</b>, percent-encoded.',
+  a: '<b>Author</b>, percent-encoded.',
+  c: '<b>Comments</b>, percent-encoded.',
+  q: '<b>Tempo</b> in quarter notes per minute, at bar 1.',
+  sw: '<b>Swing</b>, 0–100, applied at playback as today.',
+  b: '<b>Bars</b>, separated by <code>;</code>. Each is meter, optional <code>~grouping</code>, then segments; <code>*N</code> repeats a bar.',
+  tc: '<b>Tempo changes.</b> <code>3:3/2~1</code> means at bar 4 (0-based 3) a dotted quarter lasts as long as a quarter did.',
+  ov: '<b>Lane overrides.</b> <code>hh@0.2!5</code> gives the hi-hat its own 5 in bar 1, segment 3.',
+};
+
+function colorSeps(v, seps) {
+  return esc(v).replace(seps, (m) => `<span class="sep">${m}</span>`);
+}
+
+function renderAnatomy() {
+  const frag = encode(state.score);
+  const rows = frag.split('&').map((part) => {
+    const eq = part.indexOf('=');
+    const key = part.slice(0, eq);
+    const val = part.slice(eq + 1);
+    let info = FIELD_INFO[key];
+    let shown = esc(val);
+    if (key === 'b') shown = colorSeps(val, /[;:~*]/g);
+    else if (key === 'ov' || key === 'tc') shown = colorSeps(val, /[;@!~]/g);
+    else if (!info) {
+      const lane = LANES[key];
+      const letters = lane ? [...lane.chars].map((c) => `<code>${esc(c)}</code> ${esc(ART[key]?.[c] || '')}`).join(', ') : 'custom lane';
+      info = `<b>${esc(lane ? lane.name : key)}.</b> One letter per slot: ${letters}. <code>-</code> rest, <code>-N</code> N rests, <code>.</code> same as the bar before, empty bar all rests.`;
+      shown = colorSeps(val, /;|\.(?=;|$)|-\d+/g);
+    }
+    return `<div class="param"><div class="kv"><span class="key">${esc(key)}</span>=<span class="val">${shown}</span></div><div class="why">${info}</div></div>`;
+  });
+  $('anatomy-list').innerHTML = rows.join('');
+}
+
+function renderCompare() {
+  const query = LEGACY_EXAMPLE.slice(LEGACY_EXAMPLE.indexOf('?'));
+  const v2 = '#' + encode(decode(LEGACY_EXAMPLE).score);
+  $('compare').innerHTML =
+    `<figure><figcaption><span>Groove Scribe today</span><b>${query.length} chars</b></figcaption><pre>${esc(query)}</pre></figure>` +
+    `<figure><figcaption><span>Same groove, new format</span><b>${v2.length} chars</b></figcaption><pre>${esc(v2)}</pre></figure>`;
+}
+
+function renderAll({ keepFrag = false } = {}) {
+  if (!keepFrag) setFragFromScore();
+  renderPresets();
+  renderStats();
+  renderIssues();
+  renderBarTabs();
+  renderTree();
+  renderAnatomy();
+}
+
+/* ---------- events ---------- */
+
+function choosePreset(id) {
+  const p = PRESETS.find((x) => x.id === id) || PRESETS[0];
+  state.preset = p.id;
+  state.bar = 0;
+  state.path = '0';
+  state.legacy = p.id === 'legacy';
+  load(p.make(), []);
+  renderAll();
+}
+
+$('presets').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-preset]');
+  if (btn) choosePreset(btn.dataset.preset);
+});
+
+$('barTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-bar]');
+  if (!btn) return;
+  state.bar = Number(btn.dataset.bar);
+  state.path = '0';
+  renderBarTabs();
+  renderTree();
+});
+
+$('tree').addEventListener('click', (e) => {
+  const node = e.target.closest('[data-path]');
+  if (node) {
+    state.path = node.dataset.path;
+    renderTree();
+    return;
+  }
+  const cell = e.target.closest('[data-lane]');
+  if (!cell) return;
+  const lane = cell.dataset.lane;
+  const i = Number(cell.dataset.i);
+  const alphabet = '-' + (LANES[lane] ? LANES[lane].chars : 'x');
+  const strs = state.score.hits[lane];
+  const cur = strs[state.bar][i] || '-';
+  const next = alphabet[(alphabet.indexOf(cur) + 1) % alphabet.length];
+  strs[state.bar] = strs[state.bar].slice(0, i) + next + strs[state.bar].slice(i + 1);
+  state.issues = [];
+  state.preset = '';
+  renderAll();
+  const again = document.querySelector(`[data-lane="${lane}"][data-i="${i}"]`);
+  if (again) again.focus();
+});
+
+let typing;
+$('frag').addEventListener('input', () => {
+  clearTimeout(typing);
+  typing = setTimeout(() => {
+    const { score, issues, legacy } = decode('#' + $('frag').value.trim().replace(/^#/, ''));
+    state.legacy = legacy;
+    state.preset = '';
+    load(score, issues);
+    renderAll({ keepFrag: true });
+  }, 160);
+});
+
+$('copyBtn').addEventListener('click', async () => {
+  const text = '#' + $('frag').value.trim().replace(/^#/, '');
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copyBtn').textContent = 'Copied';
+  } catch {
+    $('frag').select();
+    $('copyBtn').textContent = 'Selected';
+  }
+  setTimeout(() => ($('copyBtn').textContent = 'Copy'), 1400);
+});
+
+$('convertBtn').addEventListener('click', () => {
+  const raw = $('legacyIn').value.trim();
+  const { score, issues, legacy } = decode(raw);
+  if (!legacy) {
+    $('convertNote').textContent = 'That link has no Groove Scribe fields (TimeSig, Div, H, S, K…), so nothing was converted.';
+    return;
+  }
+  state.legacy = true;
+  state.preset = '';
+  state.bar = 0;
+  state.path = '0';
+  load(score, issues);
+  renderAll();
+  const q = raw.indexOf('?');
+  $('convertNote').textContent = `Converted: ${raw.length - (q >= 0 ? q : 0)} characters of query became ${encode(score).length + 1} of fragment.`;
+});
+
+$('legacyIn').value = LEGACY_EXAMPLE;
+renderMatrix();
+renderCompare();
+choosePreset('editor');
+</script>
