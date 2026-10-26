@@ -68,3 +68,11 @@ test('edits a custom lane whose last hit was cleared', () => {
   const l = setHit(openLink('#v=2&b=4/4:4&zz9=x').link, 'zz9', 0, 0, '-');
   expect(setHit(l, 'zz9', 0, 0, 'x')).toContain('zz9=x-15');
 });
+
+test('opens nested tuplets', () => {
+  const { link, issues } = openLink(cases[2].input);
+  expect({ link, issues }).toEqual({ link: cases[2].encoded, issues: [] });
+  const { leaves } = view(link, []).bars[0];
+  expect(leaves).toHaveLength(15);
+  expect(leaves[5].start).toEqual({ num: 22, den: 15 });
+});

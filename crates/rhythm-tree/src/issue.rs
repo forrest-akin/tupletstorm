@@ -3,6 +3,7 @@
 use std::fmt;
 
 use crate::codec::MAX_BARS;
+use crate::node::MAX_DEPTH;
 
 /// How serious an issue is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -218,7 +219,7 @@ pub enum ParseError {
     /// The segments don't cover the bar's beat groups.
     SegmentsCover {
         /// How many beat groups the segments cover.
-        used: usize,
+        used: u64,
         /// The meter's numerator.
         num: u32,
         /// The meter's denominator.
@@ -244,6 +245,31 @@ pub enum ParseError {
     SplitOutOfRange {
         /// The split.
         n: u32,
+    },
+    /// A bracket ratio's second number is outside 1–64.
+    RatioOutOfRange {
+        /// The split.
+        n: u32,
+        /// The ratio's second number.
+        m: u32,
+    },
+    /// Nodes nest more than 6 levels below a segment.
+    TooDeep,
+    /// A node's weight is 0.
+    WeightZero,
+    /// A node's children are not followed by `)`.
+    ExpectedCloseParen {
+        /// Byte offset into `text`.
+        at: usize,
+        /// The text being read.
+        text: String,
+    },
+    /// A node's children fill more or fewer slots than it splits into.
+    KidsDontFill {
+        /// The split.
+        n: u32,
+        /// How many slots the children's weights fill.
+        filled: u64,
     },
     /// A bar has more than 512 leaves.
     TooManySlots {
@@ -280,6 +306,15 @@ impl fmt::Display for ParseError {
                 write!(f, "expected a number at {at} in '{text}'")
             }
             ParseError::SplitOutOfRange { n } => write!(f, "a split of {n} is out of range"),
+            ParseError::RatioOutOfRange { n, m } => write!(f, "ratio {n}:{m}"),
+            ParseError::TooDeep => write!(f, "nested deeper than {MAX_DEPTH} levels"),
+            ParseError::WeightZero => f.write_str("weight must be at least 1"),
+            ParseError::ExpectedCloseParen { at, text } => {
+                write!(f, "expected ')' at {at} in '{text}'")
+            }
+            ParseError::KidsDontFill { n, filled } => {
+                write!(f, "children of {n}(…) fill {filled} slots, not {n}")
+            }
             ParseError::TooManySlots { slots } => {
                 write!(f, "{slots} slots in one bar is too many")
             }

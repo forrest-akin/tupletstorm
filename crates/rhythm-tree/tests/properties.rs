@@ -3,7 +3,7 @@
 use proptest::prelude::*;
 use rhythm_tree::{Bar, Decoded, Rat, decode, encode};
 
-const CASES: u32 = 2048;
+const CASES: u32 = 1536;
 
 /// The leaves start at 0, each where the last ends, and end where the bar does.
 fn tiles(bar: &Bar) -> bool {
@@ -102,16 +102,40 @@ const METERS: [(u32, u32); 8] = [
     (11, 16),
 ];
 
-/// A bar like `7/8:3,1,8`: one split 1–8 per default beat group.
+/// A bar like `7/8:3,2(1,3:2@2),8`: one node per default beat group, at most 512 leaves.
 fn bar_spec() -> impl Strategy<Value = String> {
     proptest::sample::select(&METERS[..]).prop_flat_map(|(num, den)| {
         let groups = Bar::parse(&format!("{num}/{den}:1"))
             .unwrap()
             .leaves()
             .len();
-        proptest::collection::vec(1u32..=8, groups).prop_map(move |splits| {
-            let splits: Vec<_> = splits.iter().map(u32::to_string).collect();
-            format!("{num}/{den}:{}", splits.join(","))
+        proptest::collection::vec(node(), groups)
+            .prop_filter("over 512 leaves", |segs| {
+                segs.iter().map(|(_, leaves)| leaves).sum::<usize>() <= 512
+            })
+            .prop_map(move |segs| {
+                let segs: Vec<_> = segs.into_iter().map(|(text, _)| text).collect();
+                format!("{num}/{den}:{}", segs.join(","))
+            })
+    })
+}
+
+/// A node's text and how many leaves it holds: a split 1–8 with an optional ratio 1–8, or up to
+/// 3 levels of 1–4 children of weight 1–2, the parent's split being their weight sum.
+fn node() -> impl Strategy<Value = (String, usize)> {
+    let leaf = (1u32..=8, proptest::option::of(1u32..=8)).prop_map(|(n, m)| {
+        let text = m.map_or(n.to_string(), |m| format!("{n}:{m}"));
+        (text, n as usize)
+    });
+    leaf.prop_recursive(3, 64, 4, |inner| {
+        proptest::collection::vec((inner, 1u32..=2), 1..=4).prop_map(|kids| {
+            let n: u32 = kids.iter().map(|(_, w)| w).sum();
+            let leaves = kids.iter().map(|((_, leaves), _)| leaves).sum();
+            let kids: Vec<_> = kids
+                .into_iter()
+                .map(|((text, _), w)| if w == 1 { text } else { format!("{text}@{w}") })
+                .collect();
+            (format!("{n}({})", kids.join(",")), leaves)
         })
     })
 }

@@ -1,9 +1,9 @@
-//! A bar: a meter, a beat grouping and one segment per group.
+//! A bar: a meter, a beat grouping and segments, each covering one or more groups.
 
 use std::fmt;
 
 use crate::issue::ParseError;
-use crate::node::{Cursor, MAX_SLOTS, Node, int};
+use crate::node::{Cursor, Node, int};
 use crate::rat::Rat;
 
 /// A bar of a groove.
@@ -18,7 +18,7 @@ pub struct Bar {
 /// A slot of a bar that holds one hit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Leaf {
-    /// The segment (beat group) the leaf is in.
+    /// The segment the leaf is in.
     pub segment: usize,
     /// Onset in quarters from the top of the bar.
     pub start: Rat,
@@ -72,11 +72,7 @@ impl Bar {
         let mut cursor = Cursor::new(segs);
         let mut segs = vec![];
         loop {
-            let n = cursor.int()?;
-            if !(1..=MAX_SLOTS).contains(&n) {
-                return Err(ParseError::SplitOutOfRange { n });
-            }
-            segs.push(Node { n });
+            segs.push(Node::read(&mut cursor, 0)?);
             if !cursor.eat(b',') {
                 break;
             }
@@ -87,18 +83,19 @@ impl Bar {
                 bar: item.to_string(),
             });
         }
-        if let [seg] = segs.as_slice() {
+        if let [seg @ Node { w: 1, .. }] = segs.as_slice() {
             segs = vec![seg.clone(); groups.len()];
         }
-        if segs.len() != groups.len() {
+        let used = segs.iter().map(|seg| u64::from(seg.w)).sum::<u64>();
+        if used != groups.len() as u64 {
             return Err(ParseError::SegmentsCover {
-                used: segs.len(),
+                used,
                 num,
                 den,
                 groups: groups.len(),
             });
         }
-        let slots = segs.iter().map(|seg| u64::from(seg.n)).sum::<u64>();
+        let slots = segs.iter().map(Node::leaf_count).sum::<u64>();
         if slots > u64::from(MAX_LEAVES_PER_BAR) {
             return Err(ParseError::TooManySlots { slots });
         }
@@ -116,7 +113,15 @@ impl Bar {
         Bar {
             num: 4,
             den: 4,
-            segs: vec![Node { n: 4 }; groups.len()],
+            segs: vec![
+                Node {
+                    n: 4,
+                    w: 1,
+                    m: None,
+                    kids: None,
+                };
+                groups.len()
+            ],
             groups,
         }
     }
@@ -135,16 +140,19 @@ impl Bar {
     pub fn leaves(&self) -> Vec<Leaf> {
         let mut leaves = vec![];
         let mut onset = Rat::new(0, 1);
-        for (segment, (seg, &group)) in self.segs.iter().zip(&self.groups).enumerate() {
-            let span = Rat::new(i64::from(group) * 4, i64::from(self.den));
-            let slot = span / i64::from(seg.n);
-            for i in 0..seg.n {
-                leaves.push(Leaf {
-                    segment,
-                    start: onset + slot * i64::from(i),
-                    span: slot,
-                });
-            }
+        let mut groups = self.groups.iter();
+        for (segment, seg) in self.segs.iter().enumerate() {
+            let units: u32 = groups.by_ref().take(seg.w as usize).sum();
+            let span = Rat::new(i64::from(units) * 4, i64::from(self.den));
+            leaves.extend(
+                seg.slots(onset, span)
+                    .into_iter()
+                    .map(|(start, span)| Leaf {
+                        segment,
+                        start,
+                        span,
+                    }),
+            );
             onset = onset + span;
         }
         leaves
@@ -152,14 +160,12 @@ impl Bar {
 }
 
 impl fmt::Display for Bar {
-    /// Writes the bar as [`Bar::parse`] reads it, with identical segments written once.
+    /// Writes the bar as [`Bar::parse`] reads it, with identical one-group segments written once.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let splits: Vec<String> = self.segs.iter().map(|seg| seg.n.to_string()).collect();
-        let written = if splits.windows(2).all(|w| w[0] == w[1]) {
-            &splits[..1]
-        } else {
-            &splits[..]
-        };
+        let splits: Vec<String> = self.segs.iter().map(Node::to_string).collect();
+        let repeated = splits.windows(2).all(|pair| pair[0] == pair[1])
+            && self.segs.iter().all(|seg| seg.w == 1);
+        let written = if repeated { &splits[..1] } else { &splits[..] };
         write!(f, "{}/{}:{}", self.num, self.den, written.join(","))
     }
 }
@@ -258,6 +264,49 @@ mod tests {
     }
 
     #[test]
+    fn places_nested_tuplet_leaves_exactly() {
+        let starts = Bar::parse("4/4:3:2(2,2,5:4)@2,5:4(1,1,1,3:2@2)@2").map(|bar| {
+            bar.leaves()
+                .iter()
+                .map(|leaf| leaf.start * 15)
+                .collect::<Vec<_>>()
+        });
+        let expected = [0, 5, 10, 15, 20, 22, 24, 26, 28, 30, 36, 42, 48, 52, 56];
+        assert_eq!(
+            starts,
+            Ok(expected.map(|start| Rat::new(start, 1)).to_vec())
+        );
+    }
+
+    #[test]
+    fn weights_count_beat_groups() {
+        let spans = Bar::parse("5/4:4@3,4@2").map(|bar| {
+            bar.leaves()
+                .iter()
+                .filter(|leaf| leaf.segment == 0)
+                .map(|leaf| leaf.span)
+                .collect::<Vec<_>>()
+        });
+        assert_eq!(spans, Ok(vec![Rat::new(3, 4); 4]));
+    }
+
+    #[test]
+    fn huge_weights_saturate() {
+        assert_eq!(
+            Bar::parse("4/4:4@99999999999").map_err(|e| e.to_string()),
+            Err("segments cover 4294967295 beat groups; 4/4 has 4".to_string())
+        );
+    }
+
+    #[test]
+    fn writes_weighted_segments_apart() {
+        assert_eq!(
+            Bar::parse("4/4:4@2,4@2").map(|bar| bar.to_string()),
+            Ok("4/4:4@2,4@2".to_string())
+        );
+    }
+
+    #[test]
     fn rejects_malformed_bars() {
         for (s, msg) in [
             ("4/4", "'4/4' is not a bar (expected like 4/4:4)"),
@@ -281,6 +330,7 @@ mod tests {
             ("4/4:0", "a split of 0 is out of range"),
             ("4/4:65", "a split of 65 is out of range"),
             ("64/4:64", "4096 slots in one bar is too many"),
+            ("4/4:4(64,64,64,64)", "1024 slots in one bar is too many"),
             (
                 "99999999999/4:4",
                 "meter 4294967295/4: numerator out of range",

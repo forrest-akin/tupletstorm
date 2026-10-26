@@ -31,7 +31,7 @@ Run the relevant checks after every change; all must pass before a commit.
 | --- | --- |
 | Rust format | `cargo fmt --all --check` |
 | Rust lint | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
-| Rust tests | `cargo test --workspace --all-features` (unit, property and conformance tests) |
+| Rust tests | `cargo test --workspace --all-features` (unit, property, conformance and doc tests) |
 | wasm package for the web app | `wasm-pack build crates/rhythm-tree-wasm --target web --out-dir ../../web/src/core/pkg` |
 | Web (after the wasm package) | `cd web && npm ci && npm run typecheck && npm test && npm run build` |
 | Conformance fixture | `node tools/gen-conformance.mjs` (only to add cases; see below) |
