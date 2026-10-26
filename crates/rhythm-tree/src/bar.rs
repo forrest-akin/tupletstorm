@@ -1,5 +1,7 @@
 //! A bar: a meter, a beat grouping and one segment per group.
 
+use std::fmt;
+
 use crate::issue::ParseError;
 use crate::node::Node;
 use crate::rat::Rat;
@@ -27,8 +29,29 @@ pub struct Leaf {
 impl Bar {
     /// Reads a bar written like `7/8:4,4,6`.
     pub fn parse(s: &str) -> Result<Bar, ParseError> {
+        Bar::parse_in(s, s)
+    }
+
+    /// Reads a bar item like `6/8:6*2`: the bar and how many times it repeats. `*N` is a repeat
+    /// only when the text after `:` stays non-empty without it.
+    pub(crate) fn parse_item(item: &str) -> Result<(Bar, u32), ParseError> {
+        let has_segments = |spec: &str| {
+            spec.split_once(':')
+                .is_some_and(|(_, segs)| !segs.is_empty())
+        };
+        let (spec, count) = match item.rsplit_once('*') {
+            Some((spec, count)) if has_segments(spec) => {
+                int(count).map_or((item, 1), |k| (spec, k))
+            }
+            _ => (item, 1),
+        };
+        Ok((Bar::parse_in(spec, item)?, count))
+    }
+
+    /// Reads the bar `s`, naming `item`, the text it was written in, in errors.
+    fn parse_in(s: &str, item: &str) -> Result<Bar, ParseError> {
         let not_a_bar = || ParseError::NotABar {
-            spec: s.to_string(),
+            spec: item.to_string(),
         };
         let (meter, segs) = s
             .split_once(':')
@@ -61,7 +84,7 @@ impl Bar {
         if let Some(ch) = cursor.rest().chars().next() {
             return Err(ParseError::UnexpectedInBar {
                 ch,
-                bar: s.to_string(),
+                bar: item.to_string(),
             });
         }
         if let [seg] = segs.as_slice() {
@@ -125,6 +148,19 @@ impl Bar {
             onset = onset + span;
         }
         leaves
+    }
+}
+
+impl fmt::Display for Bar {
+    /// Writes the bar as [`Bar::parse`] reads it, with identical segments written once.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let splits: Vec<String> = self.segs.iter().map(|seg| seg.n.to_string()).collect();
+        let written = if splits.windows(2).all(|w| w[0] == w[1]) {
+            &splits[..1]
+        } else {
+            &splits[..]
+        };
+        write!(f, "{}/{}:{}", self.num, self.den, written.join(","))
     }
 }
 

@@ -1,5 +1,6 @@
 // Regenerates crates/rhythm-tree/tests/fixtures/conformance.json from the frozen
-// JavaScript reference. Add a case to `inputs`, then run `node tools/gen-conformance.mjs`.
+// JavaScript reference. Add a case to `inputs`, run `node tools/gen-conformance.mjs`,
+// then `cargo test -p rhythm-tree --test conformance`.
 import * as R from '../docs/reference/rhythmTree.js';
 import fs from 'fs';
 

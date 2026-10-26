@@ -25,8 +25,18 @@ pub enum Issue {
         /// The field's value, as the link has it.
         raw: String,
     },
+    /// The swing is not a number from 0 to 100; 0 was used.
+    SwingOutOfRange {
+        /// The field's value, as the link has it.
+        raw: String,
+    },
     /// A bar could not be read and was replaced with 4/4 in 16ths.
     BarReplaced(ParseError),
+    /// A bar is written to repeat 0 times; it was kept once.
+    RepeatZero {
+        /// The bar item, as the link has it.
+        spec: String,
+    },
     /// Bars past the 512th were dropped.
     TooManyBars,
     /// A lane the kit doesn't have was kept, with any letters.
@@ -92,7 +102,11 @@ impl fmt::Display for Issue {
             Issue::TempoOutOfRange { raw } => {
                 write!(f, "tempo '{raw}' out of range; using 80")
             }
+            Issue::SwingOutOfRange { raw } => {
+                write!(f, "swing '{raw}' out of range; using 0")
+            }
             Issue::BarReplaced(e) => write!(f, "{e}; replaced with 4/4 in 16ths"),
+            Issue::RepeatZero { spec } => write!(f, "bar '{spec}' repeats 0 times; kept once"),
             Issue::TooManyBars => {
                 write!(f, "more than {MAX_BARS} bars; kept the first {MAX_BARS}")
             }

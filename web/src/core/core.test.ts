@@ -9,7 +9,7 @@ const { openLink, view } = core;
 
 const { cases } = JSON.parse(
   readFileSync(new URL('../../../crates/rhythm-tree/tests/fixtures/conformance.json', import.meta.url), 'utf8'),
-) as { cases: { input: string }[] };
+) as { cases: { input: string; encoded: string }[] };
 
 const KIT = ['cr', 'rd', 'hh', 'sk', 'cb', 'sn', 't1', 't2', 't3', 't4', 'kk', 'hf', 'mt', 'st'];
 
@@ -46,4 +46,8 @@ test("opens every kit lane, then the link's custom lanes", () => {
 test('reads the title and tempo', () => {
   const { title, tempo } = view(cases[0].input, []);
   expect({ title, tempo }).toEqual({ title: 'Bars 1–2', tempo: 96 });
+});
+
+test('canonicalises the opened link', () => {
+  expect(openLink(cases[0].input).link).toBe(cases[0].encoded);
 });

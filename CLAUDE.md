@@ -31,7 +31,7 @@ Run the relevant checks after every change; all must pass before a commit.
 | --- | --- |
 | Rust format | `cargo fmt --all --check` |
 | Rust lint | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
-| Rust tests | `cargo test --workspace --all-features` (unit and property tests) |
+| Rust tests | `cargo test --workspace --all-features` (unit, property and conformance tests) |
 | wasm package for the web app | `wasm-pack build crates/rhythm-tree-wasm --target web --out-dir ../../web/src/core/pkg` |
 | Web (after the wasm package) | `cd web && npm ci && npm run typecheck && npm test && npm run build` |
 | Conformance fixture | `node tools/gen-conformance.mjs` (only to add cases; see below) |
@@ -63,15 +63,20 @@ The JS reference is frozen and specifies the behaviour the core is built to.
 The conformance fixture (`crates/rhythm-tree/tests/fixtures/conformance.json`)
 records its output for 17 inputs: links, issues, event times and MIDI
 resolution. To add a case, add it to `tools/gen-conformance.mjs` and
-regenerate.
+regenerate. `crates/rhythm-tree/tests/conformance.rs` checks the canonical
+link and issues of each case in `CODEC_CASES`; a case is listed once the core
+has every feature it uses. Events, MIDI and the legacy flag are checked once
+Play, MIDI export and old-link import exist. If the Rust behaviour must change
+on purpose, update the fixture's expected values by hand, say why in the
+commit message, and redo those edits after regenerating.
 
 ## How to work here
 
 - **Plan before code.** For anything beyond a small fix, read the relevant RFD
   and milestone, then propose a plan (files, tests, risks) before editing.
 - **Tests first in the core.** New grammar or behaviour gets a unit test, a
-  property test where it can, and a conformance case when it affects the
-  format.
+  property test where it can, and its fixture case listed in `CODEC_CASES`
+  when it affects the format.
 - **Keep the core pure.** No I/O, no clocks, no randomness in
   `crates/rhythm-tree`. Services and the client own those.
 - **Small commits that say why.** The subject says what changed; the body says

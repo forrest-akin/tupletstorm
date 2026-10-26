@@ -6,6 +6,6 @@ export type LaneView = { id: string; name: string; letters: string; bars: { hits
 export type GrooveView = { title: string; tempo: number; bars: BarView[]; lanes: LaneView[] };
 export type Issue = { level: 'error' | 'warn'; msg: string };
 export type Core = {
-  openLink(input: string): { lanes: string[]; issues: Issue[] };
+  openLink(input: string): { link: string; lanes: string[]; issues: Issue[] };
   view(link: string, lanes: string[]): GrooveView;
 };

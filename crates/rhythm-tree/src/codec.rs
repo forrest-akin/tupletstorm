@@ -32,16 +32,21 @@ pub fn decode(input: &str) -> Decoded {
         return Decoded {
             score: Score::new(
                 String::new(),
+                String::new(),
+                String::new(),
                 DEFAULT_TEMPO,
+                0.0,
                 vec![Bar::sixteenths()],
                 BTreeMap::new(),
             ),
             issues: vec![issue],
         };
     }
-    let title = safe_decode(value(&params, "t").unwrap_or_default()).into_owned();
+    let text = |key| safe_decode(value(&params, key).unwrap_or_default()).into_owned();
+    let (title, author, comments) = (text("t"), text("a"), text("c"));
     let mut issues = vec![];
     let tempo = decode_tempo(value(&params, "q"), &mut issues);
+    let swing = decode_swing(value(&params, "sw"), &mut issues);
     let bars = decode_bars(
         &safe_decode(value(&params, "b").unwrap_or("4/4:4")),
         &mut issues,
@@ -57,7 +62,7 @@ pub fn decode(input: &str) -> Decoded {
         }
     }
     Decoded {
-        score: Score::new(title, tempo, bars, hits),
+        score: Score::new(title, author, comments, tempo, swing, bars, hits),
         issues,
     }
 }
@@ -65,6 +70,100 @@ pub fn decode(input: &str) -> Decoded {
 /// What JavaScript's `trim` and `Number()`, as the reference uses them, strip: Unicode White_Space but U+0085, and U+FEFF.
 fn is_js_whitespace(c: char) -> bool {
     (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}'
+}
+
+/// Writes a score as canonical v2 link text, without the leading `#`.
+pub fn encode(score: &Score) -> String {
+    let mut fields = vec!["v=2".to_string()];
+    for (key, text) in [
+        ("t", score.title()),
+        ("a", score.author()),
+        ("c", score.comments()),
+    ] {
+        if !text.is_empty() {
+            fields.push(format!("{key}={}", percent_encode(text)));
+        }
+    }
+    fields.push(format!("q={}", score.tempo()));
+    if score.swing() != 0.0 {
+        fields.push(format!("sw={}", score.swing()));
+    }
+    fields.push(format!("b={}", encode_bars(score.bars())));
+    for (id, hits) in score
+        .lanes()
+        .into_iter()
+        .filter_map(|id| Some((id, score.hits(id)?)))
+    {
+        let lane = encode_lane(hits);
+        if !lane.is_empty() {
+            fields.push(format!("{id}={lane}"));
+        }
+    }
+    fields.join("&")
+}
+
+/// Escapes each byte of `s` as `%XX` except ``A-Za-z0-9-_.!~*'()``, like `encodeURIComponent`.
+fn percent_encode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for b in s.bytes() {
+        if b.is_ascii_alphanumeric() || b"-_.!~*'()".contains(&b) {
+            out.push(char::from(b));
+        } else {
+            out.push_str(&format!("%{b:02X}"));
+        }
+    }
+    out
+}
+
+/// Bars separated by `;`, a run of identical bars written once with `*k`.
+fn encode_bars(bars: &[Bar]) -> String {
+    let specs: Vec<String> = bars.iter().map(Bar::to_string).collect();
+    specs
+        .chunk_by(|a, b| a == b)
+        .map(|run| match run.len() {
+            1 => run[0].clone(),
+            k => format!("{}*{k}", run[0]),
+        })
+        .collect::<Vec<_>>()
+        .join(";")
+}
+
+/// One lane's bars separated by `;`: an all-rest bar empty, a bar equal to the one before `.`,
+/// trailing empty bars dropped, and custom-lane letters that are link syntax percent-encoded.
+fn encode_lane(hits: &[String]) -> String {
+    let mut parts: Vec<String> = hits
+        .iter()
+        .enumerate()
+        .map(|(b, bar)| {
+            if bar.chars().all(|c| c == '-') {
+                String::new()
+            } else if b > 0 && *bar == hits[b - 1] {
+                ".".to_string()
+            } else {
+                escape_link_syntax(&rle(bar))
+            }
+        })
+        .collect();
+    while parts.last().is_some_and(String::is_empty) {
+        parts.pop();
+    }
+    parts.join(";")
+}
+
+/// Percent-encodes `%`, `&`, `=`, `#` and `?`, which would otherwise end or garble the field, and
+/// the whitespace `decode` trims from the link's ends. The rest stays as it is: `+` is a hi-hat letter.
+fn escape_link_syntax(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        if matches!(c, '%' | '&' | '=' | '#' | '?') || is_js_whitespace(c) {
+            for b in c.encode_utf8(&mut [0; 4]).bytes() {
+                out.push_str(&format!("%{b:02X}"));
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
 }
 
 /// Quarter notes per minute: a decimal number from 10 to 999, else 80.
@@ -87,6 +186,24 @@ fn decode_tempo(raw: Option<&str>, issues: &mut Vec<Issue>) -> f64 {
 }
 
 const DEFAULT_TEMPO: f64 = 80.0;
+
+/// Swing: a number from 0 to 100, surrounding whitespace ignored; 0 when absent or blank.
+fn decode_swing(raw: Option<&str>, issues: &mut Vec<Issue>) -> f64 {
+    let raw = raw.unwrap_or_default();
+    let trimmed = raw.trim_matches(is_js_whitespace);
+    if trimmed.is_empty() {
+        return 0.0;
+    }
+    match trimmed.parse::<f64>() {
+        Ok(sw) if (0.0..=100.0).contains(&sw) => sw,
+        _ => {
+            issues.push(Issue::SwingOutOfRange {
+                raw: raw.to_string(),
+            });
+            0.0
+        }
+    }
+}
 
 /// One lane's `;`-separated bars of hits, one string per bar.
 fn decode_lane(key: &str, raw: &str, bars: &[Bar], issues: &mut Vec<Issue>) -> Vec<String> {
@@ -129,7 +246,7 @@ struct LaneBar<'a> {
 }
 
 /// One bar of one lane: `.` repeats `prev`, rest runs expand, letters the lane doesn't have become
-/// rests, and the hits are fitted to the slots.
+/// rests, the hits are fitted to the slots, and a custom lane's bar of just `.` becomes a rest.
 fn decode_lane_bar(at: &LaneBar, part: &str, prev: &str, issues: &mut Vec<Issue>) -> String {
     let mut str = if part == "." {
         prev.to_string()
@@ -165,10 +282,37 @@ fn decode_lane_bar(at: &LaneBar, part: &str, prev: &str, issues: &mut Vec<Issue>
             },
         });
     }
-    str.chars()
+    let fitted: String = str
+        .chars()
         .chain(std::iter::repeat('-'))
         .take(at.slots)
-        .collect()
+        .collect();
+    // A lone `.` (only a custom lane can keep one) would be written as `.`, a repeat.
+    if fitted == "." {
+        issues.push(Issue::BadLetters {
+            lane: at.lane.to_string(),
+            bar: at.bar,
+            letters: fitted,
+        });
+        return "-".to_string();
+    }
+    fitted
+}
+
+/// Writes each run of three or more rests as `-N`.
+fn rle(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(c) = rest.chars().next() {
+        let run = rest.len() - rest.trim_start_matches('-').len();
+        match run {
+            0 => out.push(c),
+            1 | 2 => out.push_str(&rest[..run]),
+            _ => out.push_str(&format!("-{run}")),
+        }
+        rest = &rest[run.max(c.len_utf8())..];
+    }
+    out
 }
 
 /// Expands each `-N` into N rests, N capped at `MAX_LEAVES_PER_BAR`.
@@ -192,15 +336,27 @@ fn unrle(s: &str) -> String {
 /// The `;`-separated bars, each one that can't be read replaced with 4/4 in 16ths, up to `MAX_BARS`.
 fn decode_bars(raw: &str, issues: &mut Vec<Issue>) -> Vec<Bar> {
     let mut bars = vec![];
-    for item in raw.split(';').filter(|item| !item.is_empty()) {
-        if bars.len() == MAX_BARS {
-            issues.push(Issue::TooManyBars);
-            break;
+    'items: for item in raw.split(';').filter(|item| !item.is_empty()) {
+        let (bar, count) = match Bar::parse_item(item) {
+            Ok((bar, 0)) => {
+                issues.push(Issue::RepeatZero {
+                    spec: item.to_string(),
+                });
+                (bar, 1)
+            }
+            Ok(repeated) => repeated,
+            Err(e) => {
+                issues.push(Issue::BarReplaced(e));
+                (Bar::sixteenths(), 1)
+            }
+        };
+        for _ in 0..count {
+            if bars.len() == MAX_BARS {
+                issues.push(Issue::TooManyBars);
+                break 'items;
+            }
+            bars.push(bar.clone());
         }
-        bars.push(Bar::parse(item).unwrap_or_else(|e| {
-            issues.push(Issue::BarReplaced(e));
-            Bar::sixteenths()
-        }));
     }
     if bars.is_empty() {
         bars.push(Bar::sixteenths());
@@ -530,14 +686,10 @@ mod tests {
 
     #[test]
     fn reserved_keys_are_not_lanes() {
-        let decoded = decode("#v=2&b=4/4:4&sw=20&tc=x&ov=y");
+        let decoded = decode("#v=2&b=4/4:4&tc=x&ov=y");
         assert_eq!(
             messages(&decoded),
-            [
-                "unknown field 'sw' ignored",
-                "unknown field 'tc' ignored",
-                "unknown field 'ov' ignored"
-            ]
+            ["unknown field 'tc' ignored", "unknown field 'ov' ignored"]
         );
         assert_eq!(decoded.score.lanes(), [] as [&str; 0]);
     }
@@ -585,6 +737,172 @@ mod tests {
             ("v=2&b=4/4:4", "v=2&b=4/4:4"),
         ] {
             assert_eq!(groove_body(url), body, "{url}");
+        }
+    }
+
+    fn reencode(input: &str) -> String {
+        encode(&decode(input).score)
+    }
+
+    #[test]
+    fn writes_compact_fields() {
+        let hh = ["x-x-x-x-x-x-x-x-"; 4].join(";");
+        assert_eq!(
+            reencode(&format!("#v=2&b=4/4:4;4/4:4;4/4:4;4/4:4&hh={hh}")),
+            "v=2&q=80&b=4/4:4*4&hh=x-x-x-x-x-x-x-x-;.;.;."
+        );
+    }
+
+    #[test]
+    fn percent_encodes_free_text() {
+        for (title, encoded) in [
+            ("Bars 1–2", "Bars%201%E2%80%932"),
+            ("a+b&c=d", "a%2Bb%26c%3Dd"),
+            ("(ok)!*'~-_.", "(ok)!*'~-_."),
+        ] {
+            let score = decode(&format!("#v=2&t={encoded}")).score;
+            assert_eq!(score.title(), title);
+            assert_eq!(
+                encode(&score),
+                format!("v=2&t={encoded}&q=80&b=4/4:4"),
+                "{title}"
+            );
+        }
+    }
+
+    #[test]
+    fn compresses_rest_runs() {
+        assert_eq!(
+            reencode("#v=2&b=5/4:4&hh=x-x--x---x----------"),
+            "v=2&q=80&b=5/4:4&hh=x-x--x-3x-10"
+        );
+    }
+
+    #[test]
+    fn reads_bar_repeats() {
+        for (bars, count, issues) in [
+            ("4/4:4*3", 3, vec![]),
+            (
+                "4/4:4*0",
+                1,
+                vec!["bar '4/4:4*0' repeats 0 times; kept once"],
+            ),
+            (
+                "4/4:4*99999999999",
+                512,
+                vec!["more than 512 bars; kept the first 512"],
+            ),
+            (
+                "4/4*3",
+                1,
+                vec!["'4/4*3' is not a bar (expected like 4/4:4); replaced with 4/4 in 16ths"],
+            ),
+            (
+                "5/8:*0",
+                1,
+                vec!["expected a number at 0 in '*0'; replaced with 4/4 in 16ths"],
+            ),
+        ] {
+            let decoded = decode(&format!("#v=2&b={bars}"));
+            assert_eq!(decoded.score.bars().len(), count, "{bars}");
+            assert_eq!(messages(&decoded), issues as Vec<&str>, "{bars}");
+        }
+    }
+
+    #[test]
+    fn drops_trailing_empty_bars() {
+        for (input, encoded) in [
+            ("#v=2&b=4/4:4;4/4:4&hh=x-15;", "v=2&q=80&b=4/4:4*2&hh=x-15"),
+            ("#v=2&b=4/4:4&hh=-16", "v=2&q=80&b=4/4:4"),
+        ] {
+            assert_eq!(reencode(input), encoded, "{input}");
+        }
+    }
+
+    #[test]
+    fn round_trips_author_and_comments() {
+        let decoded = decode("#v=2&a=F.%20Akin&c=%E2%99%A9%3D96");
+        assert_eq!(
+            (decoded.score.author(), decoded.score.comments()),
+            ("F. Akin", "\u{2669}=96")
+        );
+        assert_eq!(decoded.issues, []);
+        assert_eq!(
+            encode(&decoded.score),
+            "v=2&a=F.%20Akin&c=%E2%99%A9%3D96&q=80&b=4/4:4"
+        );
+    }
+
+    #[test]
+    fn escapes_link_syntax_in_custom_lanes() {
+        for (input, encoded) in [
+            ("#v=2&b=4/4:4&zz9=a%26b=1", "zz9=a%26b%3D1-11"),
+            ("#v=2&b=4/4:4&zz9=%2541", "zz9=%2541-13"),
+            ("#v=2&b=4/4:4&zz9=%23x%3F", "zz9=%23x%3F-13"),
+        ] {
+            let once = encode(&decode(input).score);
+            assert!(once.ends_with(encoded), "{input}: {once}");
+            assert_eq!(encode(&decode(&once).score), once, "{input}");
+        }
+    }
+
+    #[test]
+    fn escapes_whitespace_in_custom_lanes() {
+        for (input, encoded) in [
+            ("#v=2&b=1/4:1&zz9=%0A", "zz9=%0A"),
+            ("#v=2&b=1/4:1&zz9=%20", "zz9=%20"),
+            ("#v=2&b=1/4:1&zz9=%E3%80%80", "zz9=%E3%80%80"),
+            ("#v=2&b=1/4:1&zz9=%EF%BB%BF", "zz9=%EF%BB%BF"),
+        ] {
+            let once = encode(&decode(input).score);
+            assert!(once.ends_with(encoded), "{input}: {once:?}");
+            assert_eq!(encode(&decode(&once).score), once, "{input}");
+        }
+    }
+
+    #[test]
+    fn reads_a_lone_dot_in_a_custom_lane_as_a_rest() {
+        let decoded = decode("#v=2&b=1/4:1;1/4:1&zz9=x;.x");
+        assert_eq!(
+            decoded.score.hits("zz9"),
+            Some(&["x".to_string(), "-".to_string()][..])
+        );
+        assert_eq!(
+            messages(&decoded),
+            [
+                "custom lane 'zz9' kept as-is",
+                "zz9 bar 1: 2 hits for 1 slots; cut",
+                "zz9 bar 1: '.' not valid; made rests",
+            ]
+        );
+        let once = encode(&decoded.score);
+        assert_eq!(encode(&decode(&once).score), once);
+    }
+
+    #[test]
+    fn reads_swing() {
+        for (input, encoded) in [
+            ("#v=2&sw=20", "v=2&q=80&sw=20&b=4/4:4"),
+            ("#v=2&sw=", "v=2&q=80&b=4/4:4"),
+            ("#v=2&sw= 20", "v=2&q=80&sw=20&b=4/4:4"),
+            ("#v=2&sw= &b=4/4:4", "v=2&q=80&b=4/4:4"),
+            ("#v=2&sw=\u{feff}20", "v=2&q=80&sw=20&b=4/4:4"),
+        ] {
+            let decoded = decode(input);
+            assert_eq!(decoded.issues, [], "{input}");
+            assert_eq!(encode(&decoded.score), encoded, "{input}");
+        }
+    }
+
+    #[test]
+    fn reports_a_bad_swing() {
+        for (sw, msg) in [
+            ("101", "swing '101' out of range; using 0"),
+            ("\u{85}20", "swing '\u{85}20' out of range; using 0"),
+        ] {
+            let decoded = decode(&format!("#v=2&sw={sw}"));
+            assert_eq!(decoded.score.swing(), 0.0, "{sw}");
+            assert_eq!(messages(&decoded), [msg], "{sw}");
         }
     }
 }

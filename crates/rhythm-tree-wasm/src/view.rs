@@ -1,6 +1,6 @@
 //! Plain data the browser receives, built by functions that run natively.
 
-use rhythm_tree::{Bar, Issue, LANES, Leaf, Level, Rat, Score, decode, lane};
+use rhythm_tree::{Bar, Issue, LANES, Leaf, Level, Rat, Score, decode, encode, lane};
 use serde::Serialize;
 
 /// An issue found while opening a link.
@@ -14,6 +14,8 @@ pub struct IssueView {
 /// What opening a link gives the client.
 #[derive(Debug, Serialize)]
 pub struct Opened {
+    /// The canonical link: what the client keeps and passes back.
+    pub link: String,
     /// The lanes the editor shows: the whole kit, then the link's custom lanes.
     pub lanes: Vec<String>,
     pub issues: Vec<IssueView>,
@@ -85,6 +87,7 @@ pub fn open_of(input: &str) -> Opened {
         .into_iter()
         .filter(|id| lane(id).is_none());
     Opened {
+        link: encode(&decoded.score),
         lanes: LANES
             .iter()
             .map(|lane| lane.id)
@@ -222,5 +225,10 @@ mod tests {
             issues,
             [("warn", "Groove Scribe link not imported; starting empty")]
         );
+    }
+
+    #[test]
+    fn opens_to_the_canonical_link() {
+        assert_eq!(open_of("https://example.com/").link, "v=2&q=80&b=4/4:4");
     }
 }

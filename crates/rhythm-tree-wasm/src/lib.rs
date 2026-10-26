@@ -9,7 +9,7 @@ fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsError> {
     Ok(value.serialize(&serde_wasm_bindgen::Serializer::json_compatible())?)
 }
 
-/// Decodes a link or URL: `{ lanes: string[], issues: { level, msg }[] }`.
+/// Decodes a link or URL: `{ link: string, lanes: string[], issues: { level, msg }[] }`.
 #[wasm_bindgen(js_name = openLink)]
 pub fn open_link(input: &str) -> Result<JsValue, JsError> {
     to_js(&view::open_of(input))
