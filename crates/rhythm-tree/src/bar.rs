@@ -57,6 +57,13 @@ impl Bar {
             .split_once(':')
             .filter(|(_, segs)| !segs.is_empty() && !segs.contains(LINE_TERMINATORS))
             .ok_or_else(not_a_bar)?;
+        let (meter, grouping) = match meter.split_once('~') {
+            Some((meter, grouping)) => {
+                let parts = grouping.split('-').map(int).collect::<Option<Vec<_>>>();
+                (meter, Some(parts.ok_or_else(not_a_bar)?))
+            }
+            None => (meter, None),
+        };
         let (num, den) = meter.split_once('/').ok_or_else(not_a_bar)?;
         let (num, den) = (
             int(num).ok_or_else(not_a_bar)?,
@@ -68,7 +75,11 @@ impl Bar {
         if !DENOMINATORS.contains(&den) {
             return Err(ParseError::DenominatorOutOfRange { num, den });
         }
-        let groups = default_groups(num, den);
+        let groups = grouping.unwrap_or_else(|| default_groups(num, den));
+        let sum = groups.iter().map(|&g| u64::from(g)).sum::<u64>();
+        if groups.contains(&0) || sum != u64::from(num) {
+            return Err(ParseError::GroupingDoesntAddUp { groups, num });
+        }
         let mut cursor = Cursor::new(segs);
         let mut segs = vec![];
         loop {
@@ -131,6 +142,16 @@ impl Bar {
         (self.num, self.den)
     }
 
+    /// The beat grouping in 1/den units, summing to the numerator (7/8 → `[2, 2, 3]`).
+    pub fn groups(&self) -> &[u32] {
+        &self.groups
+    }
+
+    /// Whether the grouping is the meter's default, which links leave unwritten.
+    pub fn has_default_grouping(&self) -> bool {
+        self.groups == default_groups(self.num, self.den)
+    }
+
     /// Length in quarters.
     pub fn length(&self) -> Rat {
         Rat::new(i64::from(self.num) * 4, i64::from(self.den))
@@ -166,7 +187,12 @@ impl fmt::Display for Bar {
         let repeated = splits.windows(2).all(|pair| pair[0] == pair[1])
             && self.segs.iter().all(|seg| seg.w == 1);
         let written = if repeated { &splits[..1] } else { &splits[..] };
-        write!(f, "{}/{}:{}", self.num, self.den, written.join(","))
+        write!(f, "{}/{}", self.num, self.den)?;
+        if !self.has_default_grouping() {
+            let parts: Vec<String> = self.groups.iter().map(u32::to_string).collect();
+            write!(f, "~{}", parts.join("-"))?;
+        }
+        write!(f, ":{}", written.join(","))
     }
 }
 
@@ -250,6 +276,46 @@ mod tests {
     }
 
     #[test]
+    fn reads_an_explicit_grouping() {
+        assert_eq!(
+            Bar::parse("5/8~3-2:6,4").map(|bar| bar.groups().to_vec()),
+            Ok(vec![3, 2])
+        );
+    }
+
+    #[test]
+    fn elides_the_default_grouping() {
+        for (s, written) in [
+            ("7/8~3-2-2:6,4,4", "7/8~3-2-2:6,4,4"),
+            ("7/8~2-2-3:4,4,6", "7/8:4,4,6"),
+        ] {
+            assert_eq!(
+                Bar::parse(s).map(|bar| bar.to_string()),
+                Ok(written.to_string()),
+                "{s}"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_groupings_that_dont_add_up() {
+        for (s, msg) in [
+            ("4/4~1-1:4", "grouping 1+1 doesn't add up to 4"),
+            ("4/4~0-4:4", "grouping 0+4 doesn't add up to 4"),
+            (
+                "4/4~18446744073709551615-18446744073709551615:4",
+                "grouping 4294967295+4294967295 doesn't add up to 4",
+            ),
+        ] {
+            assert_eq!(
+                Bar::parse(s).map_err(|e| e.to_string()),
+                Err(msg.to_string()),
+                "{s}"
+            );
+        }
+    }
+
+    #[test]
     fn walks_leaves_exactly() {
         let leaves = Bar::parse("7/8:4,4,6").unwrap().leaves();
         assert_eq!(leaves.len(), 14);
@@ -314,6 +380,15 @@ mod tests {
             ("0/4:4", "meter 0/4: numerator out of range"),
             ("65/4:4", "meter 65/4: numerator out of range"),
             ("4/5:4", "meter 4/5: denominator out of range"),
+            (
+                "4/5~2-x:4",
+                "'4/5~2-x:4' is not a bar (expected like 4/4:4)",
+            ),
+            ("99/4~x:4", "'99/4~x:4' is not a bar (expected like 4/4:4)"),
+            (
+                "2/11~2-2-x3:4,4:3",
+                "'2/11~2-2-x3:4,4:3' is not a bar (expected like 4/4:4)",
+            ),
             ("4/4:4,4", "segments cover 2 beat groups; 4/4 has 4"),
             ("4/4:4x", "unexpected 'x' in bar '4/4:4x'"),
             ("4/4:4\n", "'4/4:4\n' is not a bar (expected like 4/4:4)"),

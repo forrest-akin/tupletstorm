@@ -38,7 +38,7 @@ export function Groove({ view, issues, onCell }: { view: GrooveView; issues: Iss
 function Bar({ bar }: { bar: BarView }) {
   return (
     <div className="bar" data-bar style={{ flexGrow: quarters(bar.length) }}>
-      <div className="meter">{bar.meter}</div>
+      <div className="meter">{bar.grouping ? `${bar.meter} ${bar.grouping}` : bar.meter}</div>
       <div className="slots">
         {bar.leaves.map((leaf, i) => (
           <div

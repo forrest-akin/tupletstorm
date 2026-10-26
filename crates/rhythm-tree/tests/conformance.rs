@@ -4,7 +4,7 @@ use rhythm_tree::{Level, decode, encode};
 use serde_json::Value;
 
 /// The fixture cases whose every feature the core has.
-const CODEC_CASES: &[usize] = &[0, 2, 10, 11, 13, 14];
+const CODEC_CASES: &[usize] = &[0, 2, 10, 11, 13, 14, 15];
 
 #[test]
 fn codec_matches_the_reference() {

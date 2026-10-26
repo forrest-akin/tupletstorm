@@ -58,6 +58,8 @@ pub struct LaneBarView {
 pub struct BarView {
     /// Like `7/8`.
     pub meter: String,
+    /// Like `3+2`; `None` for the meter's default grouping.
+    pub grouping: Option<String>,
     /// Length in quarters.
     pub length: RatView,
     pub leaves: Vec<LeafView>,
@@ -167,6 +169,10 @@ fn bar_view(bar: &Bar) -> BarView {
     let (num, den) = bar.meter();
     BarView {
         meter: format!("{num}/{den}"),
+        grouping: (!bar.has_default_grouping()).then(|| {
+            let parts: Vec<String> = bar.groups().iter().map(u32::to_string).collect();
+            parts.join("+")
+        }),
         length: rat_view(bar.length()),
         leaves: bar.leaves().iter().map(leaf_view).collect(),
     }

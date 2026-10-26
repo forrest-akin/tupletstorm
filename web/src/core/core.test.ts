@@ -22,6 +22,7 @@ test('opens a v2 link through the wasm package', () => {
   expect(bars.map((b) => b.leaves.length)).toEqual([16, 14]);
   expect(bars[1].length).toEqual({ num: 7, den: 2 });
   expect(bars[1].leaves[13]).toEqual({ segment: 2, start: { num: 13, den: 4 }, span: { num: 1, den: 4 } });
+  expect(bars[0].grouping).toBeNull();
 });
 
 test('reports a link with no groove', () => {
@@ -75,4 +76,9 @@ test('opens nested tuplets', () => {
   const { leaves } = view(link, []).bars[0];
   expect(leaves).toHaveLength(15);
   expect(leaves[5].start).toEqual({ num: 22, den: 15 });
+});
+
+test('opens groupings', () => {
+  expect(view(openLink('#v=2&b=5/8~3-2:6,4').link, []).bars[0].grouping).toBe('3+2');
+  expect(openLink(cases[15].input).link).toBe(cases[15].encoded);
 });

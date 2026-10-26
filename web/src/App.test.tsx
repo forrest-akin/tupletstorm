@@ -10,6 +10,7 @@ const quarter = { num: 1, den: 4 };
 
 const fourFour: BarView = {
   meter: '4/4',
+  grouping: null,
   length: { num: 4, den: 1 },
   leaves: Array.from({ length: 16 }, (_, i) => ({
     segment: Math.floor(i / 4),

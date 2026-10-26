@@ -803,6 +803,11 @@ mod tests {
                 1,
                 vec!["expected a number at 0 in '*0'; replaced with 4/4 in 16ths"],
             ),
+            (
+                "1/4~3-3:*3",
+                1,
+                vec!["grouping 3+3 doesn't add up to 1; replaced with 4/4 in 16ths"],
+            ),
         ] {
             let decoded = decode(&format!("#v=2&b={bars}"));
             assert_eq!(decoded.score.bars().len(), count, "{bars}");

@@ -8,9 +8,9 @@ afterEach(cleanup);
 
 const quarter = { num: 1, den: 4 };
 
-function bar(meter: string, length: BarView['length'], segments: number[]): BarView {
+function bar(meter: string, length: BarView['length'], segments: number[], grouping: string | null = null): BarView {
   const leaves: Leaf[] = segments.map((segment, i) => ({ segment, start: { num: i, den: 4 }, span: quarter }));
-  return { meter, length, leaves };
+  return { meter, grouping, length, leaves };
 }
 
 const fourFour = bar('4/4', { num: 4, den: 1 }, [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]);
@@ -28,6 +28,14 @@ test('draws a row of slots per bar, sized by length', () => {
   expect(slots[0].style.flexGrow).toBe('0.25');
   const starts = slots.flatMap((slot, i) => (slot.classList.contains('segment-start') ? [i] : []));
   expect(starts).toEqual([0, 4, 8, 12]);
+});
+
+test("shows a bar's grouping when it isn't the default", () => {
+  const fiveEight = bar('5/8', { num: 5, den: 2 }, [0, 0, 0, 1, 1], '3+2');
+  render(<Groove view={{ title: '', tempo: 80, bars: [fiveEight, fourFour], lanes: [] }} issues={[]} onCell={vi.fn()} />);
+
+  expect(screen.getByText('5/8 3+2')).toBeTruthy();
+  expect(screen.getByText('4/4')).toBeTruthy();
 });
 
 test('lists the issues from opening the link', () => {

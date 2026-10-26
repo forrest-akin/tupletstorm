@@ -102,22 +102,53 @@ const METERS: [(u32, u32); 8] = [
     (11, 16),
 ];
 
-/// A bar like `7/8:3,2(1,3:2@2),8`: one node per default beat group, at most 512 leaves.
+/// A bar like `7/8:3,2(1,3:2@2),8` or `7/8~4-3:3,6`: one node per beat group, at most 512 leaves.
+/// Half the bars write a grouping other than the default.
 fn bar_spec() -> impl Strategy<Value = String> {
-    proptest::sample::select(&METERS[..]).prop_flat_map(|(num, den)| {
-        let groups = Bar::parse(&format!("{num}/{den}:1"))
-            .unwrap()
-            .leaves()
-            .len();
-        proptest::collection::vec(node(), groups)
-            .prop_filter("over 512 leaves", |segs| {
-                segs.iter().map(|(_, leaves)| leaves).sum::<usize>() <= 512
-            })
-            .prop_map(move |segs| {
-                let segs: Vec<_> = segs.into_iter().map(|(text, _)| text).collect();
-                format!("{num}/{den}:{}", segs.join(","))
-            })
-    })
+    proptest::sample::select(&METERS[..])
+        .prop_flat_map(|(num, den)| (Just((num, den)), proptest::option::of(grouping(num, den))))
+        .prop_flat_map(|((num, den), grouping)| {
+            let (meter, groups) = match grouping {
+                Some(parts) => {
+                    let text: Vec<_> = parts.iter().map(u32::to_string).collect();
+                    (format!("{num}/{den}~{}", text.join("-")), parts.len())
+                }
+                None => (format!("{num}/{den}"), default_groups(num, den).len()),
+            };
+            proptest::collection::vec(node(), groups)
+                .prop_filter("over 512 leaves", |segs| {
+                    segs.iter().map(|(_, leaves)| leaves).sum::<usize>() <= 512
+                })
+                .prop_map(move |segs| {
+                    let segs: Vec<_> = segs.into_iter().map(|(text, _)| text).collect();
+                    format!("{meter}:{}", segs.join(","))
+                })
+        })
+}
+
+/// Parts summing to `num` that aren't the meter's default grouping.
+fn grouping(num: u32, den: u32) -> impl Strategy<Value = Vec<u32>> {
+    let default = default_groups(num, den);
+    proptest::collection::vec(any::<bool>(), num as usize - 1)
+        .prop_map(|cuts| {
+            let mut parts = vec![1];
+            for cut in cuts {
+                if cut {
+                    parts.push(1);
+                } else {
+                    *parts.last_mut().unwrap() += 1;
+                }
+            }
+            parts
+        })
+        .prop_filter("the default grouping", move |parts| *parts != default)
+}
+
+fn default_groups(num: u32, den: u32) -> Vec<u32> {
+    Bar::parse(&format!("{num}/{den}:1"))
+        .unwrap()
+        .groups()
+        .to_vec()
 }
 
 /// A node's text and how many leaves it holds: a split 1–8 with an optional ratio 1–8, or up to

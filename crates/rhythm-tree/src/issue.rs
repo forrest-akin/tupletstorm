@@ -227,6 +227,13 @@ pub enum ParseError {
         /// How many beat groups the bar has.
         groups: usize,
     },
+    /// A bar's beat grouping doesn't sum to its numerator.
+    GroupingDoesntAddUp {
+        /// The grouping's parts.
+        groups: Vec<u32>,
+        /// The meter's numerator.
+        num: u32,
+    },
     /// A bar's segments are followed by text that isn't a segment.
     UnexpectedInBar {
         /// The first character that couldn't be read.
@@ -299,6 +306,10 @@ impl fmt::Display for ParseError {
                 f,
                 "segments cover {used} beat groups; {num}/{den} has {groups}"
             ),
+            ParseError::GroupingDoesntAddUp { groups, num } => {
+                let parts: Vec<String> = groups.iter().map(u32::to_string).collect();
+                write!(f, "grouping {} doesn't add up to {num}", parts.join("+"))
+            }
             ParseError::UnexpectedInBar { ch, bar } => {
                 write!(f, "unexpected '{ch}' in bar '{bar}'")
             }
