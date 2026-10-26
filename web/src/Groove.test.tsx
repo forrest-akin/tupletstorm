@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, expect, test } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, expect, test, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Groove } from './Groove';
 import type { BarView, Leaf } from './core/types';
 
@@ -17,7 +17,7 @@ const fourFour = bar('4/4', { num: 4, den: 1 }, [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2
 const sevenEight = bar('7/8', { num: 7, den: 2 }, [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]);
 
 test('draws a row of slots per bar, sized by length', () => {
-  const { container } = render(<Groove view={{ title: '', tempo: 80, bars: [fourFour, sevenEight], lanes: [] }} issues={[]} />);
+  const { container } = render(<Groove view={{ title: '', tempo: 80, bars: [fourFour, sevenEight], lanes: [] }} issues={[]} onCell={vi.fn()} />);
 
   expect(container.querySelectorAll('[data-slot]')).toHaveLength(30);
   expect(screen.queryByRole('heading')).toBeNull();
@@ -31,7 +31,7 @@ test('draws a row of slots per bar, sized by length', () => {
 });
 
 test('lists the issues from opening the link', () => {
-  render(<Groove view={{ title: '', tempo: 80, bars: [], lanes: [] }} issues={[{ level: 'error', msg: 'x; replaced with 4/4 in 16ths' }]} />);
+  render(<Groove view={{ title: '', tempo: 80, bars: [], lanes: [] }} issues={[{ level: 'error', msg: 'x; replaced with 4/4 in 16ths' }]} onCell={vi.fn()} />);
 
   expect(screen.getByText('x; replaced with 4/4 in 16ths').className).toBe('error');
 });
@@ -41,7 +41,7 @@ test('draws a row per lane with its letters', () => {
     { id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x-x-x-x-x-x-x-x-' }] },
     { id: 'sn', name: 'Snare', letters: '-oOgxfdb', bars: [{ hits: '----o-------o---' }] },
   ];
-  render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} />);
+  render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} onCell={vi.fn()} />);
 
   const row = (name: string) => screen.getByText(name).closest('[data-lane]') as HTMLElement;
   expect(row('Hi-hat').querySelectorAll('[data-cell]')).toHaveLength(16);
@@ -60,7 +60,7 @@ test('draws a row per lane with its letters', () => {
 
 test('gives each code point of a lane its own cell', () => {
   const lanes = [{ id: 'zz9', name: 'zz9', letters: '', bars: [{ hits: '😀x--------------' }] }];
-  render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} />);
+  render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} onCell={vi.fn()} />);
 
   expect(screen.getByLabelText('zz9, bar 1, slot 1: 😀')).toBeTruthy();
   expect(screen.getByLabelText('zz9, bar 1, slot 2: x')).toBeTruthy();
@@ -68,8 +68,18 @@ test('gives each code point of a lane its own cell', () => {
 });
 
 test('shows the title and tempo', () => {
-  render(<Groove view={{ title: 'Five over four', tempo: 96, bars: [fourFour], lanes: [] }} issues={[]} />);
+  render(<Groove view={{ title: 'Five over four', tempo: 96, bars: [fourFour], lanes: [] }} issues={[]} onCell={vi.fn()} />);
 
   expect(screen.getByText('Five over four')).toBeTruthy();
   expect(screen.getByText('♩ = 96')).toBeTruthy();
+});
+
+test('reports a clicked cell', () => {
+  const lanes = [{ id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x' + '-'.repeat(15) }] }];
+  const onCell = vi.fn();
+  render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} onCell={onCell} />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Hi-hat, bar 1, slot 1: x' }));
+
+  expect(onCell).toHaveBeenCalledWith('hh', 0, 0, 'x', '-xXo+');
 });

@@ -97,7 +97,12 @@ main {
 .cell {
   flex-basis: 0;
   min-width: 0;
+  padding: 0;
+  border: 0;
   border-left: 1px solid var(--line);
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
   color: var(--hit);
   font-size: 13px;
   line-height: 24px;

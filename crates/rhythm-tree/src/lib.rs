@@ -18,6 +18,6 @@ mod score;
 
 pub use bar::{Bar, Leaf};
 pub use codec::{Decoded, decode, encode};
-pub use issue::{Fit, Issue, Level, ParseError};
+pub use issue::{EditError, Fit, Issue, Level, ParseError};
 pub use rat::Rat;
-pub use score::{LANES, Lane, Score, lane};
+pub use score::{LANES, Lane, Score, lane, letters};

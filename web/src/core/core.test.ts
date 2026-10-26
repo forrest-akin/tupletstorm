@@ -5,7 +5,7 @@ import { core } from './core';
 
 initSync({ module: readFileSync(new URL('./pkg/rhythm_tree_wasm_bg.wasm', import.meta.url)) });
 
-const { openLink, view } = core;
+const { openLink, view, setHit } = core;
 
 const { cases } = JSON.parse(
   readFileSync(new URL('../../../crates/rhythm-tree/tests/fixtures/conformance.json', import.meta.url), 'utf8'),
@@ -50,4 +50,21 @@ test('reads the title and tempo', () => {
 
 test('canonicalises the opened link', () => {
   expect(openLink(cases[0].input).link).toBe(cases[0].encoded);
+});
+
+test('rewrites the link when a hit changes', () => {
+  const { link } = openLink(cases[0].input);
+  expect(setHit(link, 'hh', 0, 1, 'x')).toBe(link.replace('hh=x-x-x-x-x-x-7;', 'hh=xxx-x-x-x-x-7;'));
+  expect(() => setHit(link, 'hh', 9, 0, 'x')).toThrow("bar 9 doesn't exist");
+});
+
+test('views a lane whose last hit was cleared', () => {
+  const l = setHit(openLink('#v=2&b=4/4:4&hh=x').link, 'hh', 0, 0, '-');
+  expect(l).not.toContain('hh=');
+  expect(view(l, ['hh']).lanes[0].bars[0].hits).toBe('-'.repeat(16));
+});
+
+test('edits a custom lane whose last hit was cleared', () => {
+  const l = setHit(openLink('#v=2&b=4/4:4&zz9=x').link, 'zz9', 0, 0, '-');
+  expect(setHit(l, 'zz9', 0, 0, 'x')).toContain('zz9=x-15');
 });

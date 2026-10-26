@@ -2,7 +2,9 @@ import type { BarView, GrooveView, Issue, LaneView, Rat } from './core/types';
 
 const quarters = (r: Rat) => r.num / r.den;
 
-export function Groove({ view, issues }: { view: GrooveView; issues: Issue[] }) {
+export type OnCell = (lane: string, bar: number, leaf: number, hit: string, letters: string) => void;
+
+export function Groove({ view, issues, onCell }: { view: GrooveView; issues: Issue[]; onCell: OnCell }) {
   return (
     <main>
       {issues.length > 0 && (
@@ -26,7 +28,7 @@ export function Groove({ view, issues }: { view: GrooveView; issues: Issue[] }) 
           ))}
         </div>
         {view.lanes.map((lane) => (
-          <Lane key={lane.id} lane={lane} bars={view.bars} />
+          <Lane key={lane.id} lane={lane} bars={view.bars} onCell={onCell} />
         ))}
       </div>
     </main>
@@ -51,7 +53,7 @@ function Bar({ bar }: { bar: BarView }) {
   );
 }
 
-function Lane({ lane, bars }: { lane: LaneView; bars: BarView[] }) {
+function Lane({ lane, bars, onCell }: { lane: LaneView; bars: BarView[]; onCell: OnCell }) {
   return (
     <div className="row" data-lane>
       <div className="lane-name">{lane.name}</div>
@@ -62,15 +64,17 @@ function Lane({ lane, bars }: { lane: LaneView; bars: BarView[] }) {
             {bar.leaves.map((leaf, i) => {
               const letter = hits[i];
               return (
-                <div
+                <button
                   key={i}
+                  type="button"
                   className={segmentStart(bar, i) ? 'cell segment-start' : 'cell'}
                   data-cell
                   aria-label={`${lane.name}, bar ${b + 1}, slot ${i + 1}: ${letter === '-' ? 'rest' : letter}`}
                   style={{ flexGrow: quarters(leaf.span) }}
+                  onClick={() => onCell(lane.id, b, i, letter, lane.letters)}
                 >
                   {letter === '-' ? '' : letter}
-                </div>
+                </button>
               );
             })}
           </div>

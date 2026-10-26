@@ -21,3 +21,15 @@ pub fn view(link: &str, lanes: Vec<String>) -> Result<JsValue, JsError> {
     let lanes: Vec<&str> = lanes.iter().map(String::as_str).collect();
     to_js(&view::view_of(link, &lanes))
 }
+
+/// The link with one hit set; throws when the lane, bar, slot or letter doesn't exist.
+#[wasm_bindgen(js_name = setHit)]
+pub fn set_hit(
+    link: &str,
+    lane: &str,
+    bar: usize,
+    leaf: usize,
+    letter: char,
+) -> Result<String, JsError> {
+    view::set_hit_of(link, lane, bar, leaf, letter).map_err(|err| JsError::new(&err.to_string()))
+}

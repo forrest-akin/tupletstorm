@@ -8,4 +8,5 @@ export type Issue = { level: 'error' | 'warn'; msg: string };
 export type Core = {
   openLink(input: string): { link: string; lanes: string[]; issues: Issue[] };
   view(link: string, lanes: string[]): GrooveView;
+  setHit(link: string, lane: string, bar: number, leaf: number, letter: string): string;
 };

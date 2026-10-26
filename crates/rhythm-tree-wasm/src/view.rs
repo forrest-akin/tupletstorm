@@ -1,6 +1,8 @@
 //! Plain data the browser receives, built by functions that run natively.
 
-use rhythm_tree::{Bar, Issue, LANES, Leaf, Level, Rat, Score, decode, encode, lane};
+use rhythm_tree::{
+    Bar, EditError, Issue, LANES, Leaf, Level, Rat, Score, decode, encode, lane, letters,
+};
 use serde::Serialize;
 
 /// An issue found while opening a link.
@@ -111,8 +113,7 @@ fn issue_view(issue: &Issue) -> IssueView {
 
 /// The groove a link holds.
 pub fn view_of(link: &str, lanes: &[&str]) -> GrooveView {
-    // The link is canonical, so its issues were already listed when it was opened.
-    let score = decode(link).score;
+    let score = score_of(link);
     GrooveView {
         title: score.title().to_string(),
         tempo: score.tempo(),
@@ -121,8 +122,26 @@ pub fn view_of(link: &str, lanes: &[&str]) -> GrooveView {
     }
 }
 
+/// The link with one hit set; `bar` and `leaf` count from 0.
+pub fn set_hit_of(
+    link: &str,
+    lane: &str,
+    bar: usize,
+    leaf: usize,
+    letter: char,
+) -> Result<String, EditError> {
+    let mut score = score_of(link);
+    score.set_hit(lane, bar, leaf, letter)?;
+    Ok(encode(&score))
+}
+
+fn score_of(link: &str) -> Score {
+    // The link is canonical, so its issues were already listed when it was opened.
+    decode(link).score
+}
+
 fn lane_view(score: &Score, id: &str) -> LaneView {
-    let (name, chars) = lane(id).map_or((id, "x"), |lane| (lane.name, lane.chars));
+    let (name, chars) = (lane(id).map_or(id, |lane| lane.name), letters(id));
     let bars = match score.hits(id) {
         Some(hits) => hits
             .iter()
@@ -211,6 +230,14 @@ mod tests {
     fn views_a_lane_the_link_lacks_as_rests() {
         let view = view_of("#v=2&b=4/4:4", &["hh"]);
         assert_eq!(view.lanes, [lane("hh", "Hi-hat", "-xXo+", &"-".repeat(16))]);
+    }
+
+    #[test]
+    fn refuses_a_slot_the_bar_lacks() {
+        assert!(matches!(
+            set_hit_of("v=2&q=80&b=4/4:4", "hh", 0, 16, 'x'),
+            Err(EditError::NoSuchSlot { .. })
+        ));
     }
 
     #[test]

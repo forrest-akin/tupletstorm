@@ -4,7 +4,9 @@ Tupletstorm grows in phases. Each phase ships something people can use, and each
 later phase adds one kind of distributed-systems component on top of the same
 core library.
 
-Status: **phase 0 done**. Phase 1 is in progress (milestone 2).
+Status: **phase 0 done**. Phase 1 is in progress: in milestone 2, opening a v2
+link, drawing its bars and lanes, and cycling a cell to rewrite the link work;
+Play and sample loading wait on RFD 0004 (audio scheduling).
 
 ## Phase 0: design and format references (done)
 

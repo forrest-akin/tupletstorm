@@ -147,6 +147,52 @@ impl fmt::Display for Fit {
     }
 }
 
+/// Why an edit to a score was refused.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EditError {
+    /// The key can't name a lane.
+    UnknownLane {
+        /// The key.
+        lane: String,
+    },
+    /// The score has no bar at this index.
+    NoSuchBar {
+        /// The bar, from 0.
+        bar: usize,
+    },
+    /// The bar has no leaf at this index.
+    NoSuchSlot {
+        /// The lane's key.
+        lane: String,
+        /// The bar, from 0.
+        bar: usize,
+        /// The leaf, from 0.
+        leaf: usize,
+    },
+    /// The lane has no such letter.
+    NotALetter {
+        /// The lane's key.
+        lane: String,
+        /// The letter.
+        letter: char,
+    },
+}
+
+impl fmt::Display for EditError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EditError::UnknownLane { lane } => write!(f, "no lane '{lane}'"),
+            EditError::NoSuchBar { bar } => write!(f, "bar {bar} doesn't exist"),
+            EditError::NoSuchSlot { lane, bar, leaf } => {
+                write!(f, "{lane} bar {bar} has no slot {leaf}")
+            }
+            EditError::NotALetter { lane, letter } => {
+                write!(f, "'{letter}' is not a {lane} letter")
+            }
+        }
+    }
+}
+
 /// Why a piece of link text could not be read.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ParseError {
