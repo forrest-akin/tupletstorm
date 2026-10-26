@@ -149,11 +149,9 @@ fn lane_view(score: &Score, id: &str) -> LaneView {
             .iter()
             .map(|hits| LaneBarView { hits: hits.clone() })
             .collect(),
-        None => score
-            .bars()
-            .iter()
-            .map(|bar| LaneBarView {
-                hits: "-".repeat(bar.leaves().len()),
+        None => (0..score.bars().len())
+            .map(|b| LaneBarView {
+                hits: "-".repeat(score.lane_leaves(id, b).len()),
             })
             .collect(),
     };

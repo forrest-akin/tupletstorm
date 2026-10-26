@@ -39,7 +39,6 @@ pub fn decode(input: &str) -> Decoded {
                 0.0,
                 vec![Bar::sixteenths()],
                 vec![],
-                BTreeMap::new(),
             ),
             issues: vec![issue],
         };
@@ -54,29 +53,19 @@ pub fn decode(input: &str) -> Decoded {
         &mut issues,
     );
     let tempo_changes = decode_tempo_changes(value(&params, "tc"), bars.len(), &mut issues);
+    let mut score = Score::new(title, author, comments, tempo, swing, bars, tempo_changes);
     let mut hits = BTreeMap::new();
     for (key, raw) in params.iter().filter(|(key, _)| !KNOWN_KEYS.contains(key)) {
         if is_lane_key(key) {
-            hits.insert(key.to_string(), decode_lane(key, raw, &bars, &mut issues));
+            hits.insert(key.to_string(), decode_lane(key, raw, &score, &mut issues));
         } else {
             issues.push(Issue::UnknownField {
                 key: key.to_string(),
             });
         }
     }
-    Decoded {
-        score: Score::new(
-            title,
-            author,
-            comments,
-            tempo,
-            swing,
-            bars,
-            tempo_changes,
-            hits,
-        ),
-        issues,
-    }
+    score.set_lanes(hits);
+    Decoded { score, issues }
 }
 
 /// What JavaScript's `trim` and `Number()`, as the reference uses them, strip: Unicode White_Space but U+0085, and U+FEFF.
@@ -226,7 +215,8 @@ fn decode_swing(raw: Option<&str>, issues: &mut Vec<Issue>) -> f64 {
 }
 
 /// One lane's `;`-separated bars of hits, one string per bar.
-fn decode_lane(key: &str, raw: &str, bars: &[Bar], issues: &mut Vec<Issue>) -> Vec<String> {
+fn decode_lane(key: &str, raw: &str, score: &Score, issues: &mut Vec<Issue>) -> Vec<String> {
+    let bars = score.bars();
     let allowed = lane(key).map(|lane| lane.chars);
     if allowed.is_none() {
         issues.push(Issue::CustomLane {
@@ -243,11 +233,11 @@ fn decode_lane(key: &str, raw: &str, bars: &[Bar], issues: &mut Vec<Issue>) -> V
         });
     }
     let mut strs: Vec<String> = Vec::with_capacity(bars.len());
-    for (b, bar) in bars.iter().enumerate() {
+    for b in 0..bars.len() {
         let at = LaneBar {
             lane: key,
             bar: b,
-            slots: bar.leaves().len(),
+            slots: score.lane_leaves(key, b).len(),
             allowed,
         };
         let prev = strs.last().map_or("", String::as_str);

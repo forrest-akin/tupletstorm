@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use crate::bar::Bar;
+use crate::bar::{Bar, Leaf};
 use crate::issue::{EditError, TempoChangeError};
 use crate::node::int;
 use crate::rat::Rat;
@@ -107,7 +107,6 @@ pub struct Score {
 }
 
 impl Score {
-    #[expect(clippy::too_many_arguments, reason = "decode sets every field at once")]
     pub(crate) fn new(
         title: String,
         author: String,
@@ -116,7 +115,6 @@ impl Score {
         swing: f64,
         bars: Vec<Bar>,
         tempo_changes: Vec<TempoChange>,
-        hits: BTreeMap<String, Vec<String>>,
     ) -> Score {
         Score {
             title,
@@ -126,7 +124,7 @@ impl Score {
             swing,
             bars,
             tempo_changes,
-            hits,
+            hits: BTreeMap::new(),
         }
     }
 
@@ -158,6 +156,20 @@ impl Score {
     /// The bars, in order.
     pub fn bars(&self) -> &[Bar] {
         &self.bars
+    }
+
+    /// The leaves a lane's hits fill in `bar`, in time order.
+    ///
+    /// # Panics
+    ///
+    /// If `bar` is out of range.
+    pub fn lane_leaves(&self, _lane: &str, bar: usize) -> Vec<Leaf> {
+        self.bars[bar].leaves()
+    }
+
+    /// Sets every lane's hits.
+    pub(crate) fn set_lanes(&mut self, hits: BTreeMap<String, Vec<String>>) {
+        self.hits = hits;
     }
 
     /// The tempo changes, in link order.
@@ -206,19 +218,17 @@ impl Score {
         if bar >= self.bars.len() {
             return Err(EditError::NoSuchBar { bar });
         }
-        if leaf >= self.bars[bar].leaves().len() {
+        if leaf >= self.lane_leaves(lane, bar).len() {
             return Err(EditError::NoSuchSlot {
                 lane: lane.to_string(),
                 bar,
                 leaf,
             });
         }
-        let bars = &self.bars;
-        let hits = self.hits.entry(lane.to_string()).or_insert_with(|| {
-            bars.iter()
-                .map(|bar| "-".repeat(bar.leaves().len()))
-                .collect()
-        });
+        let rests = (0..self.bars.len())
+            .map(|b| "-".repeat(self.lane_leaves(lane, b).len()))
+            .collect();
+        let hits = self.hits.entry(lane.to_string()).or_insert(rests);
         hits[bar] = hits[bar]
             .chars()
             .enumerate()
