@@ -46,8 +46,8 @@ test('lists the issues from opening the link', () => {
 
 test('draws a row per lane with its letters', () => {
   const lanes = [
-    { id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x-x-x-x-x-x-x-x-' }] },
-    { id: 'sn', name: 'Snare', letters: '-oOgxfdb', bars: [{ hits: '----o-------o---' }] },
+    { id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x-x-x-x-x-x-x-x-', leaves: fourFour.leaves }] },
+    { id: 'sn', name: 'Snare', letters: '-oOgxfdb', bars: [{ hits: '----o-------o---', leaves: fourFour.leaves }] },
   ];
   render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} onCell={vi.fn()} />);
 
@@ -67,7 +67,7 @@ test('draws a row per lane with its letters', () => {
 });
 
 test('gives each code point of a lane its own cell', () => {
-  const lanes = [{ id: 'zz9', name: 'zz9', letters: '', bars: [{ hits: '😀x--------------' }] }];
+  const lanes = [{ id: 'zz9', name: 'zz9', letters: '', bars: [{ hits: '😀x--------------', leaves: fourFour.leaves }] }];
   render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} onCell={vi.fn()} />);
 
   expect(screen.getByLabelText('zz9, bar 1, slot 1: 😀')).toBeTruthy();
@@ -83,11 +83,24 @@ test('shows the title and tempo', () => {
 });
 
 test('reports a clicked cell', () => {
-  const lanes = [{ id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x' + '-'.repeat(15) }] }];
+  const lanes = [{ id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x' + '-'.repeat(15), leaves: fourFour.leaves }] }];
   const onCell = vi.fn();
   render(<Groove view={{ title: '', tempo: 80, bars: [fourFour], lanes }} issues={[]} onCell={onCell} />);
 
   fireEvent.click(screen.getByRole('button', { name: 'Hi-hat, bar 1, slot 1: x' }));
 
   expect(onCell).toHaveBeenCalledWith('hh', 0, 0, 'x', '-xXo+');
+});
+
+test('draws each lane from its own leaves', () => {
+  const fifteen = bar('4/4', { num: 4, den: 1 }, [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3]);
+  const lanes = [
+    { id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: '-'.repeat(16), leaves: fourFour.leaves }] },
+    { id: 'kk', name: 'Kick', letters: '-oO', bars: [{ hits: '-'.repeat(15), leaves: fifteen.leaves }] },
+  ];
+  render(<Groove view={{ title: '', tempo: 80, bars: [fifteen], lanes }} issues={[]} onCell={vi.fn()} />);
+
+  const row = (name: string) => screen.getByText(name).closest('[data-lane]') as HTMLElement;
+  expect(row('Hi-hat').querySelectorAll('[data-cell]')).toHaveLength(16);
+  expect(row('Kick').querySelectorAll('[data-cell]')).toHaveLength(15);
 });

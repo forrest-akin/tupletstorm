@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use crate::bar::{Bar, MAX_LEAVES_PER_BAR};
 use crate::issue::{Fit, Issue};
 use crate::node::int;
-use crate::score::{KNOWN_KEYS, Score, TempoChange, is_lane_key, lane};
+use crate::score::{KNOWN_KEYS, Override, Score, TempoChange, is_lane_key, lane};
 
 /// What `decode` read, and the problems it worked around.
 #[derive(Clone, Debug, PartialEq)]
@@ -54,6 +54,7 @@ pub fn decode(input: &str) -> Decoded {
     );
     let tempo_changes = decode_tempo_changes(value(&params, "tc"), bars.len(), &mut issues);
     let mut score = Score::new(title, author, comments, tempo, swing, bars, tempo_changes);
+    decode_overrides(value(&params, "ov"), &mut score, &mut issues);
     let mut hits = BTreeMap::new();
     for (key, raw) in params.iter().filter(|(key, _)| !KNOWN_KEYS.contains(key)) {
         if is_lane_key(key) {
@@ -97,6 +98,10 @@ pub fn encode(score: &Score) -> String {
             .map(ToString::to_string)
             .collect();
         fields.push(format!("tc={}", items.join(";")));
+    }
+    if !score.overrides().is_empty() {
+        let items: Vec<String> = score.overrides().iter().map(ToString::to_string).collect();
+        fields.push(format!("ov={}", items.join(";")));
     }
     for (id, hits) in score
         .lanes()
@@ -358,6 +363,18 @@ fn decode_tempo_changes(
                 .ok()
         })
         .collect()
+}
+
+/// The `;`-separated lane overrides, each one that can't be read or grafted dropped.
+fn decode_overrides(raw: Option<&str>, score: &mut Score, issues: &mut Vec<Issue>) {
+    let raw = safe_decode(raw.unwrap_or_default());
+    for item in raw.split(';').filter(|item| !item.is_empty()) {
+        if let Err(e) =
+            Override::parse(item, score.bars().len()).and_then(|ov| score.add_override(ov))
+        {
+            issues.push(Issue::OverrideIgnored(e));
+        }
+    }
 }
 
 /// The `;`-separated bars, each one that can't be read replaced with 4/4 in 16ths, up to `MAX_BARS`.
@@ -712,13 +729,6 @@ mod tests {
     }
 
     #[test]
-    fn reserved_keys_are_not_lanes() {
-        let decoded = decode("#v=2&b=4/4:4&ov=y");
-        assert_eq!(messages(&decoded), ["unknown field 'ov' ignored"]);
-        assert_eq!(decoded.score.lanes(), [] as [&str; 0]);
-    }
-
-    #[test]
     fn reads_the_title() {
         let decoded = decode("#v=2&t=A%20%26%20B");
         assert_eq!(decoded.score.title(), "A & B");
@@ -956,5 +966,91 @@ mod tests {
             assert_eq!(messages(&decoded), [msg], "{tc}");
             assert_eq!(encode(&decoded.score), "v=2&q=80&b=4/4:4;6/8:6", "{tc}");
         }
+    }
+
+    #[test]
+    fn gives_a_lane_its_own_subtree() {
+        let decoded =
+            decode("#v=2&b=4/4:4,4,4,3&ov=hh@0.2!5&hh=xxxxxxxxxxxxx-3&kk=o--o--o-o--oo--");
+        assert_eq!(messages(&decoded), [] as [String; 0]);
+        let slots = |lane| decoded.score.lane_leaves(lane, 0).len();
+        assert_eq!((slots("hh"), slots("kk")), (16, 15));
+        assert_eq!(hits(&decoded, "hh"), ["xxxxxxxxxxxxx---"]);
+    }
+
+    #[test]
+    fn grafts_into_implicit_leaves() {
+        let decoded = decode("#v=2&b=4/4:4*3;5/4~3-2:4@3,4@2&ov=hh@1.0.2!3;hh@1.0!5:4;kk@3.1!7");
+        assert_eq!(decoded.score.lane_leaves("hh", 1).len(), 17);
+        assert!(
+            encode(&decoded.score).contains("&ov=hh@1.0.2!3;hh@1.0!5:4;"),
+            "{}",
+            encode(&decoded.score)
+        );
+    }
+
+    #[test]
+    fn rejects_bad_overrides() {
+        let rows = [
+            (
+                "XX@0.1!3",
+                "override ignored: 'XX@0.1!3' is not lane@bar.path!node",
+            ),
+            ("hh@3.0!3", "override ignored: bar 3 doesn't exist"),
+            (
+                "hh@0.9!5",
+                "override ignored: override path 9 does not exist",
+            ),
+            ("hh@0.0!3x", "override ignored: unexpected 'x' at 1 in '3x'"),
+            (
+                "hh@0.0!3%0A",
+                "override ignored: 'hh@0.0!3\n' is not lane@bar.path!node",
+            ),
+            (
+                "hh@0.0!3%E2%80%A9",
+                "override ignored: 'hh@0.0!3\u{2029}' is not lane@bar.path!node",
+            ),
+        ];
+        for (ov, msg) in rows {
+            let decoded = decode(&format!("#v=2&b=4/4:4;7/8:4,4,6&ov={ov}"));
+            assert_eq!(messages(&decoded), [msg], "{ov}");
+            assert_eq!(encode(&decoded.score), "v=2&q=80&b=4/4:4;7/8:4,4,6", "{ov}");
+        }
+    }
+
+    #[test]
+    fn rejects_overrides_past_the_limits() {
+        let deep = "64(64(64(64(64(64(64,1@63),1@63),1@63),1@63),1@63),1@63)";
+        let rows = [
+            (
+                "#v=2&b=4/4:1&ov=hh@0.0!64(64,64,64,64,64,64,64,64,64,64@55)&hh=x".to_string(),
+                [
+                    "override ignored: 643 slots in one bar is too many",
+                    "hh bar 0: 1 hits for 4 slots; padded",
+                ],
+            ),
+            (
+                format!("#v=2&b=4/4:1&ov=hh@0.0!{deep};hh@0.0.0.0.0.0.0.0!{deep}&hh=x"),
+                [
+                    "override ignored: nested deeper than 6 levels",
+                    "hh bar 0: 1 hits for 73 slots; padded",
+                ],
+            ),
+        ];
+        for (input, msgs) in rows {
+            assert_eq!(messages(&decode(&input)), msgs, "{input}");
+        }
+    }
+
+    #[test]
+    fn rejects_a_long_override_path_before_walking_it() {
+        let path = "0.".repeat(100_000);
+        let decoded = decode(&format!("#v=2&b=4/4:4&ov=hh@0.{path}0!1"));
+        assert_eq!(
+            messages(&decoded),
+            ["override ignored: nested deeper than 6 levels"]
+        );
+        let at_the_limit = decode("#v=2&b=4/4:4&ov=hh@0.0.0.0.0.0.0.0!1");
+        assert_eq!(messages(&at_the_limit), [] as [String; 0]);
     }
 }

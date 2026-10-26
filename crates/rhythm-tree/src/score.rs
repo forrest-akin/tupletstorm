@@ -1,11 +1,12 @@
-//! A groove: its title, author, comments, tempo, swing, bars, tempo changes and each lane's hits.
+//! A groove: its title, author, comments, tempo, swing, bars, tempo changes, lane overrides and
+//! each lane's hits.
 
 use std::collections::BTreeMap;
 use std::fmt;
 
-use crate::bar::{Bar, Leaf};
-use crate::issue::{EditError, TempoChangeError};
-use crate::node::int;
+use crate::bar::{Bar, LINE_TERMINATORS, Leaf};
+use crate::issue::{EditError, ParseError, TempoChangeError};
+use crate::node::{Node, int};
 use crate::rat::Rat;
 
 /// A kit piece: one row of hits.
@@ -93,6 +94,64 @@ impl fmt::Display for TempoChange {
     }
 }
 
+/// One lane's own subtree for a node of a bar: `path` walks from the bar's segments.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Override {
+    lane: String,
+    bar: usize,
+    path: Vec<u32>,
+    node: Node,
+}
+
+impl Override {
+    /// `lane@bar.path!node`, in a groove of `bars` bars.
+    pub(crate) fn parse(item: &str, bars: usize) -> Result<Override, ParseError> {
+        let not = || ParseError::NotOverride {
+            item: item.to_string(),
+        };
+        let (lane, rest) = item.split_once('@').ok_or_else(not)?;
+        let (at, node) = rest.split_once('!').ok_or_else(not)?;
+        let indices: Vec<u32> = at
+            .split('.')
+            .map(int)
+            .collect::<Option<_>>()
+            .ok_or_else(not)?;
+        let mut chars = lane.chars();
+        let lane_ok = chars.next().is_some_and(|c| c.is_ascii_lowercase())
+            && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit());
+        let [bar, path @ ..] = indices.as_slice() else {
+            return Err(not());
+        };
+        if !lane_ok || path.is_empty() || node.is_empty() || node.contains(LINE_TERMINATORS) {
+            return Err(not());
+        }
+        if *bar as usize >= bars {
+            return Err(ParseError::NoSuchBar { bar: *bar });
+        }
+        Ok(Override {
+            lane: lane.to_string(),
+            bar: *bar as usize,
+            path: path.to_vec(),
+            node: Node::parse(node)?,
+        })
+    }
+}
+
+impl fmt::Display for Override {
+    /// Writes the node at weight 1: the graft keeps the replaced node's weight.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}@{}", self.lane, self.bar)?;
+        for i in &self.path {
+            write!(f, ".{i}")?;
+        }
+        let node = Node {
+            w: 1,
+            ..self.node.clone()
+        };
+        write!(f, "!{node}")
+    }
+}
+
 /// A decoded groove.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Score {
@@ -103,6 +162,8 @@ pub struct Score {
     swing: f64,
     bars: Vec<Bar>,
     tempo_changes: Vec<TempoChange>,
+    overrides: Vec<Override>,
+    lane_bars: BTreeMap<(String, usize), Bar>,
     hits: BTreeMap<String, Vec<String>>,
 }
 
@@ -124,6 +185,8 @@ impl Score {
             swing,
             bars,
             tempo_changes,
+            overrides: vec![],
+            lane_bars: BTreeMap::new(),
             hits: BTreeMap::new(),
         }
     }
@@ -163,8 +226,25 @@ impl Score {
     /// # Panics
     ///
     /// If `bar` is out of range.
-    pub fn lane_leaves(&self, _lane: &str, bar: usize) -> Vec<Leaf> {
-        self.bars[bar].leaves()
+    pub fn lane_leaves(&self, lane: &str, bar: usize) -> Vec<Leaf> {
+        self.lane_bar(lane, bar).leaves()
+    }
+
+    /// Adds an override, unless it can't graft onto its bar as its lane plays it.
+    pub(crate) fn add_override(&mut self, ov: Override) -> Result<(), ParseError> {
+        let grafted = self
+            .lane_bar(&ov.lane, ov.bar)
+            .grafted(&ov.path, &ov.node)?;
+        self.lane_bars.insert((ov.lane.clone(), ov.bar), grafted);
+        self.overrides.push(ov);
+        Ok(())
+    }
+
+    /// `bar` as `lane` plays it, with the lane's overrides for it grafted in.
+    fn lane_bar(&self, lane: &str, bar: usize) -> &Bar {
+        self.lane_bars
+            .get(&(lane.to_string(), bar))
+            .unwrap_or(&self.bars[bar])
     }
 
     /// Sets every lane's hits.
@@ -175,6 +255,11 @@ impl Score {
     /// The tempo changes, in link order.
     pub(crate) fn tempo_changes(&self) -> &[TempoChange] {
         &self.tempo_changes
+    }
+
+    /// The lane overrides, in link order.
+    pub(crate) fn overrides(&self) -> &[Override] {
+        &self.overrides
     }
 
     /// A lane's hits, one string per bar with one letter per leaf, or `None` when the link has no such lane.
@@ -241,7 +326,7 @@ impl Score {
 /// Whether a key names a lane: not a format field, and a lowercase letter, then one to five
 /// lowercase letters or digits.
 pub(crate) fn is_lane_key(key: &str) -> bool {
-    if RESERVED_KEYS.contains(&key) {
+    if KNOWN_KEYS.contains(&key) {
         return false;
     }
     let mut chars = key.chars();
@@ -250,10 +335,7 @@ pub(crate) fn is_lane_key(key: &str) -> bool {
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
 }
 
-pub(crate) const KNOWN_KEYS: [&str; 8] = ["v", "t", "a", "c", "q", "sw", "b", "tc"];
-
-/// Format fields that are never lanes. Those not in `KNOWN_KEYS` are reported as unknown.
-const RESERVED_KEYS: [&str; 7] = ["t", "a", "c", "q", "sw", "tc", "ov"];
+pub(crate) const KNOWN_KEYS: [&str; 9] = ["v", "t", "a", "c", "q", "sw", "b", "tc", "ov"];
 
 #[cfg(test)]
 mod tests {

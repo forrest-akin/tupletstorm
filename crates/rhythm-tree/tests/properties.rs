@@ -37,8 +37,8 @@ proptest! {
     }
 
     #[test]
-    fn grammar_shaped_text_decodes(tail in "[0-9/:~,()@*;-]{0,40}") {
-        let decoded = decode_on_wasm_stack(format!("#v=2&b={tail}"));
+    fn grammar_shaped_text_decodes(link in grammar_shaped()) {
+        let decoded = decode_on_wasm_stack(link);
         prop_assert!(decoded.score.bars().iter().all(tiles));
     }
 
@@ -49,8 +49,8 @@ proptest! {
     }
 
     #[test]
-    fn grammar_shaped_text_reencodes_stably(tail in "[0-9/:~,()@*;-]{0,40}") {
-        let once = encode(&decode(&format!("#v=2&b={tail}")).score);
+    fn grammar_shaped_text_reencodes_stably(link in grammar_shaped()) {
+        let once = encode(&decode(&link).score);
         prop_assert_eq!(encode(&decode(&once).score), once);
     }
 
@@ -102,6 +102,16 @@ const METERS: [(u32, u32); 8] = [
     (9, 8),
     (11, 16),
 ];
+
+/// A v2 link whose bars, overrides and hi-hat hits are made of their fields' characters.
+fn grammar_shaped() -> impl Strategy<Value = String> {
+    (
+        "[0-9/:~,()@*;-]{0,40}",
+        "[a-z0-9@.!:(),;]{0,30}",
+        "[-xXo+.;0-9]{0,40}",
+    )
+        .prop_map(|(b, ov, hh)| format!("#v=2&b={b}&ov={ov}&hh={hh}"))
+}
 
 /// A bar like `7/8:3,2(1,3:2@2),8` or `7/8~4-3:3,6`: one node per beat group, at most 512 leaves.
 /// Half the bars write a grouping other than the default.

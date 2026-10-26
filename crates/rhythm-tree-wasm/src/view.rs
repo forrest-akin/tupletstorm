@@ -51,6 +51,8 @@ pub struct LaneView {
 pub struct LaneBarView {
     /// One letter per leaf; `-` is a rest.
     pub hits: String,
+    /// The leaves the lane's hits fill, in time order.
+    pub leaves: Vec<LeafView>,
 }
 
 /// One bar.
@@ -66,7 +68,7 @@ pub struct BarView {
 }
 
 /// A leaf slot of a bar.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct LeafView {
     pub segment: usize,
     /// Onset in quarters from the top of the bar.
@@ -144,17 +146,18 @@ fn score_of(link: &str) -> Score {
 
 fn lane_view(score: &Score, id: &str) -> LaneView {
     let (name, chars) = (lane(id).map_or(id, |lane| lane.name), letters(id));
-    let bars = match score.hits(id) {
-        Some(hits) => hits
-            .iter()
-            .map(|hits| LaneBarView { hits: hits.clone() })
-            .collect(),
-        None => (0..score.bars().len())
-            .map(|b| LaneBarView {
-                hits: "-".repeat(score.lane_leaves(id, b).len()),
-            })
-            .collect(),
-    };
+    let bars = (0..score.bars().len())
+        .map(|b| {
+            let leaves = score.lane_leaves(id, b);
+            let hits = score
+                .hits(id)
+                .map_or_else(|| "-".repeat(leaves.len()), |hits| hits[b].clone());
+            LaneBarView {
+                hits,
+                leaves: leaves.iter().map(leaf_view).collect(),
+            }
+        })
+        .collect();
     LaneView {
         id: id.to_string(),
         name: name.to_string(),
@@ -217,6 +220,12 @@ mod tests {
             letters: letters.to_string(),
             bars: vec![LaneBarView {
                 hits: hits.to_string(),
+                leaves: Bar::parse("4/4:4")
+                    .unwrap()
+                    .leaves()
+                    .iter()
+                    .map(leaf_view)
+                    .collect(),
             }],
         }
     }

@@ -1,4 +1,4 @@
-import type { BarView, GrooveView, Issue, LaneView, Rat } from './core/types';
+import type { BarView, GrooveView, Issue, LaneView, Leaf, Rat } from './core/types';
 
 const quarters = (r: Rat) => r.num / r.den;
 
@@ -43,7 +43,7 @@ function Bar({ bar }: { bar: BarView }) {
         {bar.leaves.map((leaf, i) => (
           <div
             key={i}
-            className={segmentStart(bar, i) ? 'slot segment-start' : 'slot'}
+            className={segmentStart(bar.leaves, i) ? 'slot segment-start' : 'slot'}
             data-slot
             style={{ flexGrow: quarters(leaf.span) }}
           />
@@ -61,13 +61,13 @@ function Lane({ lane, bars, onCell }: { lane: LaneView; bars: BarView[]; onCell:
         const hits = Array.from(lane.bars[b].hits);
         return (
           <div key={b} className="cells" style={{ flexGrow: quarters(bar.length) }}>
-            {bar.leaves.map((leaf, i) => {
+            {lane.bars[b].leaves.map((leaf, i) => {
               const letter = hits[i];
               return (
                 <button
                   key={i}
                   type="button"
-                  className={segmentStart(bar, i) ? 'cell segment-start' : 'cell'}
+                  className={segmentStart(lane.bars[b].leaves, i) ? 'cell segment-start' : 'cell'}
                   data-cell
                   aria-label={`${lane.name}, bar ${b + 1}, slot ${i + 1}: ${letter === '-' ? 'rest' : letter}`}
                   style={{ flexGrow: quarters(leaf.span) }}
@@ -84,4 +84,4 @@ function Lane({ lane, bars, onCell }: { lane: LaneView; bars: BarView[]; onCell:
   );
 }
 
-const segmentStart = (bar: BarView, i: number) => i === 0 || bar.leaves[i - 1].segment !== bar.leaves[i].segment;
+const segmentStart = (leaves: Leaf[], i: number) => i === 0 || leaves[i - 1].segment !== leaves[i].segment;

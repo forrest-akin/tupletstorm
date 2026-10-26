@@ -42,6 +42,27 @@ impl Node {
         Ok(Node { n, w, m, kids })
     }
 
+    /// Reads a whole node, like `3:2(1,2)`.
+    pub(crate) fn parse(s: &str) -> Result<Node, ParseError> {
+        let mut c = Cursor::new(s);
+        let node = Node::read(&mut c, 0)?;
+        match c.rest().chars().next() {
+            Some(ch) => Err(ParseError::Unexpected {
+                ch,
+                at: c.at,
+                text: s.to_string(),
+            }),
+            None => Ok(node),
+        }
+    }
+
+    /// How many levels the node nests below itself.
+    pub(crate) fn height(&self) -> usize {
+        self.kids.as_ref().map_or(0, |kids| {
+            1 + kids.iter().map(Node::height).max().unwrap_or_default()
+        })
+    }
+
     /// How many leaves the node holds.
     pub(crate) fn leaf_count(&self) -> u64 {
         self.kids.as_ref().map_or(u64::from(self.n), |kids| {
@@ -109,6 +130,37 @@ impl fmt::Display for Node {
         Ok(())
     }
 }
+
+/// Replaces the node at `path` in `nodes` with `node`, keeping the replaced node's weight. An
+/// unsplit node on the way splits into `n` leaves first.
+pub(crate) fn graft(nodes: &mut Vec<Node>, path: &[u32], node: &Node) -> Result<(), ParseError> {
+    if path.len() > MAX_DEPTH + 1 {
+        return Err(ParseError::TooDeep);
+    }
+    let missing = || ParseError::NoSuchPath {
+        path: path.to_vec(),
+    };
+    let (&last, above) = path.split_last().ok_or_else(missing)?;
+    let mut list = nodes;
+    for &i in above {
+        let target = list.get_mut(i as usize).ok_or_else(missing)?;
+        let n = target.n as usize;
+        list = target.kids.get_or_insert_with(|| vec![LEAF; n]);
+    }
+    let target = list.get_mut(last as usize).ok_or_else(missing)?;
+    *target = Node {
+        w: target.w,
+        ..node.clone()
+    };
+    Ok(())
+}
+
+const LEAF: Node = Node {
+    n: 1,
+    w: 1,
+    m: None,
+    kids: None,
+};
 
 /// The most slots one node splits into.
 pub(crate) const MAX_SLOTS: u32 = 64;

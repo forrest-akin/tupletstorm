@@ -3,7 +3,7 @@
 use std::fmt;
 
 use crate::issue::ParseError;
-use crate::node::{Cursor, Node, int};
+use crate::node::{Cursor, MAX_DEPTH, Node, graft, int};
 use crate::rat::Rat;
 
 /// A bar of a groove.
@@ -157,6 +157,20 @@ impl Bar {
         Rat::new(i64::from(self.num) * 4, i64::from(self.den))
     }
 
+    /// The bar with `node` grafted in at `path`, within the limits a bar has.
+    pub(crate) fn grafted(&self, path: &[u32], node: &Node) -> Result<Bar, ParseError> {
+        let mut bar = self.clone();
+        graft(&mut bar.segs, path, node)?;
+        if bar.segs.iter().any(|seg| seg.height() > MAX_DEPTH) {
+            return Err(ParseError::TooDeep);
+        }
+        let slots = bar.segs.iter().map(Node::leaf_count).sum::<u64>();
+        if slots > u64::from(MAX_LEAVES_PER_BAR) {
+            return Err(ParseError::TooManySlots { slots });
+        }
+        Ok(bar)
+    }
+
     /// The bar's leaves in time order.
     pub fn leaves(&self) -> Vec<Leaf> {
         let mut leaves = vec![];
@@ -201,8 +215,8 @@ pub(crate) const MAX_LEAVES_PER_BAR: u32 = 512;
 
 const DENOMINATORS: [u32; 6] = [1, 2, 4, 8, 16, 32];
 
-/// The characters the reference's `.` doesn't match, so its bar pattern rejects them.
-const LINE_TERMINATORS: [char; 4] = ['\n', '\r', '\u{2028}', '\u{2029}'];
+/// The characters the reference's `.` doesn't match, so its bar and override patterns reject them.
+pub(crate) const LINE_TERMINATORS: [char; 4] = ['\n', '\r', '\u{2028}', '\u{2029}'];
 
 /// Quarter-note meters beat by beat; others in 3s when they divide by 3, else in 2s ending in a 3
 /// (7/8 is 2+2+3).

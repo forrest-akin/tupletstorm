@@ -60,7 +60,7 @@ test('views the canonical link', () => {
 });
 
 test('cycles a clicked cell and writes the new link', () => {
-  const hh = { id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x' + '-'.repeat(15) }] };
+  const hh = { id: 'hh', name: 'Hi-hat', letters: '-xXo+', bars: [{ hits: 'x' + '-'.repeat(15), leaves: fourFour.leaves }] };
   const core: Core = {
     openLink: vi.fn(() => ({ link: 'v=2&q=80&b=4/4:4&hh=x-15', lanes: ['hh'], issues: [] })),
     view: vi.fn(() => ({ title: '', tempo: 80, bars: [fourFour], lanes: [hh] })),

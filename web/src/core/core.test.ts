@@ -88,3 +88,10 @@ test('keeps tempo changes', () => {
   expect(link).toBe(cases[3].encoded);
   expect(setHit(link, 'hh', 0, 1, 'x')).toContain('&tc=3:3/2~1&');
 });
+
+test("draws a lane's override", () => {
+  expect(openLink(cases[1].input).link).toBe(cases[1].encoded);
+  const [hh, kk] = view(cases[1].encoded, ['hh', 'kk']).lanes;
+  expect(hh.bars[0].leaves).toHaveLength(16);
+  expect(kk.bars[0].leaves).toHaveLength(15);
+});

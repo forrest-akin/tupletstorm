@@ -64,7 +64,7 @@ pub enum Issue {
         /// The letters, in order.
         letters: String,
     },
-    /// A bar of a lane had more or fewer hits than the bar has slots.
+    /// A bar of a lane had more or fewer hits than the lane has slots in that bar.
     HitCount {
         /// The lane's key.
         lane: String,
@@ -72,13 +72,15 @@ pub enum Issue {
         bar: usize,
         /// How many hits the link has.
         hits: usize,
-        /// How many slots the bar has.
+        /// How many slots the lane has in the bar.
         slots: usize,
         /// What was done about it.
         fit: Fit,
     },
     /// A tempo change could not be read and was dropped.
     TempoChangeIgnored(TempoChangeError),
+    /// A lane override could not be read or grafted and was dropped.
+    OverrideIgnored(ParseError),
     /// A field the format doesn't have was ignored.
     UnknownField {
         /// The field's key.
@@ -129,6 +131,7 @@ impl fmt::Display for Issue {
                 fit,
             } => write!(f, "{lane} bar {bar}: {hits} hits for {slots} slots; {fit}"),
             Issue::TempoChangeIgnored(e) => write!(f, "tempo change ignored: {e}"),
+            Issue::OverrideIgnored(e) => write!(f, "override ignored: {e}"),
             Issue::UnknownField { key } => write!(f, "unknown field '{key}' ignored"),
         }
     }
@@ -268,6 +271,15 @@ pub enum ParseError {
     TooDeep,
     /// A node's weight is 0.
     WeightZero,
+    /// A node is followed by text that isn't part of it.
+    Unexpected {
+        /// The first character that couldn't be read.
+        ch: char,
+        /// Byte offset into `text`.
+        at: usize,
+        /// The text being read.
+        text: String,
+    },
     /// A node's children are not followed by `)`.
     ExpectedCloseParen {
         /// Byte offset into `text`.
@@ -286,6 +298,21 @@ pub enum ParseError {
     TooManySlots {
         /// How many leaves the bar has.
         slots: u64,
+    },
+    /// A lane override is not `lane@bar.path!node`.
+    NotOverride {
+        /// The item.
+        item: String,
+    },
+    /// An override's path walks past the bar's nodes.
+    NoSuchPath {
+        /// The path below the bar.
+        path: Vec<u32>,
+    },
+    /// An override is at a bar the groove doesn't have.
+    NoSuchBar {
+        /// The bar, from 0.
+        bar: u32,
     },
 }
 
@@ -324,6 +351,9 @@ impl fmt::Display for ParseError {
             ParseError::RatioOutOfRange { n, m } => write!(f, "ratio {n}:{m}"),
             ParseError::TooDeep => write!(f, "nested deeper than {MAX_DEPTH} levels"),
             ParseError::WeightZero => f.write_str("weight must be at least 1"),
+            ParseError::Unexpected { ch, at, text } => {
+                write!(f, "unexpected '{ch}' at {at} in '{text}'")
+            }
             ParseError::ExpectedCloseParen { at, text } => {
                 write!(f, "expected ')' at {at} in '{text}'")
             }
@@ -333,6 +363,14 @@ impl fmt::Display for ParseError {
             ParseError::TooManySlots { slots } => {
                 write!(f, "{slots} slots in one bar is too many")
             }
+            ParseError::NotOverride { item } => {
+                write!(f, "'{item}' is not lane@bar.path!node")
+            }
+            ParseError::NoSuchPath { path } => {
+                let path: Vec<String> = path.iter().map(u32::to_string).collect();
+                write!(f, "override path {} does not exist", path.join("."))
+            }
+            ParseError::NoSuchBar { bar } => write!(f, "bar {bar} doesn't exist"),
         }
     }
 }
