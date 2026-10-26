@@ -3,8 +3,9 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use crate::bar::{Bar, MAX_LEAVES_PER_BAR, int};
+use crate::bar::{Bar, MAX_LEAVES_PER_BAR};
 use crate::issue::{Fit, Issue};
+use crate::node::int;
 use crate::score::{KNOWN_KEYS, Score, is_lane_key, lane};
 
 /// What `decode` read, and the problems it worked around.

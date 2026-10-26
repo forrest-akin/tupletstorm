@@ -3,7 +3,7 @@
 use std::fmt;
 
 use crate::issue::ParseError;
-use crate::node::Node;
+use crate::node::{Cursor, MAX_SLOTS, Node, int};
 use crate::rat::Rat;
 
 /// A bar of a groove.
@@ -69,7 +69,7 @@ impl Bar {
             return Err(ParseError::DenominatorOutOfRange { num, den });
         }
         let groups = default_groups(num, den);
-        let mut cursor = Cursor { s: segs, at: 0 };
+        let mut cursor = Cursor::new(segs);
         let mut segs = vec![];
         loop {
             let n = cursor.int()?;
@@ -164,9 +164,6 @@ impl fmt::Display for Bar {
     }
 }
 
-/// The most slots one node splits into.
-pub const MAX_SLOTS: u32 = 64;
-
 /// The most leaves one bar holds.
 pub(crate) const MAX_LEAVES_PER_BAR: u32 = 512;
 
@@ -192,48 +189,6 @@ fn default_groups(num: u32, den: u32) -> Vec<u32> {
     }
     groups.push(rest);
     groups
-}
-
-/// A read position in link text.
-struct Cursor<'a> {
-    s: &'a str,
-    at: usize,
-}
-
-impl Cursor<'_> {
-    /// The digit run at the cursor, moving past it.
-    fn int(&mut self) -> Result<u32, ParseError> {
-        let digits = self.rest().bytes().take_while(u8::is_ascii_digit).count();
-        let n = int(&self.rest()[..digits]).ok_or_else(|| ParseError::ExpectedNumber {
-            at: self.at,
-            text: self.s.to_string(),
-        })?;
-        self.at += digits;
-        Ok(n)
-    }
-
-    /// Moves past `b` when it is next.
-    fn eat(&mut self, b: u8) -> bool {
-        let next = self.rest().as_bytes().first() == Some(&b);
-        if next {
-            self.at += 1;
-        }
-        next
-    }
-
-    fn rest(&self) -> &str {
-        &self.s[self.at..]
-    }
-}
-
-/// A run of digits, saturating at `u32::MAX`.
-pub(crate) fn int(s: &str) -> Option<u32> {
-    if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {
-        return None;
-    }
-    Some(s.bytes().fold(0u32, |n, b| {
-        n.saturating_mul(10).saturating_add(u32::from(b - b'0'))
-    }))
 }
 
 #[cfg(test)]
