@@ -1,4 +1,4 @@
-//! A groove: its bars and each lane's hits.
+//! A groove: its title, tempo, bars and each lane's hits.
 
 use std::collections::BTreeMap;
 
@@ -45,13 +45,35 @@ pub fn lane(id: &str) -> Option<&'static Lane> {
 /// A decoded groove.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Score {
+    title: String,
+    tempo: f64,
     bars: Vec<Bar>,
     hits: BTreeMap<String, Vec<String>>,
 }
 
 impl Score {
-    pub(crate) fn new(bars: Vec<Bar>, hits: BTreeMap<String, Vec<String>>) -> Score {
-        Score { bars, hits }
+    pub(crate) fn new(
+        title: String,
+        tempo: f64,
+        bars: Vec<Bar>,
+        hits: BTreeMap<String, Vec<String>>,
+    ) -> Score {
+        Score {
+            title,
+            tempo,
+            bars,
+            hits,
+        }
+    }
+
+    /// The title; empty when the link has none.
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    /// Quarter notes per minute.
+    pub fn tempo(&self) -> f64 {
+        self.tempo
     }
 
     /// The bars, in order.
@@ -90,7 +112,7 @@ pub(crate) fn is_lane_key(key: &str) -> bool {
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
 }
 
-pub(crate) const KNOWN_KEYS: [&str; 2] = ["v", "b"];
+pub(crate) const KNOWN_KEYS: [&str; 4] = ["v", "t", "q", "b"];
 
 /// Format fields that are never lanes. Those not in `KNOWN_KEYS` are reported as unknown.
 const RESERVED_KEYS: [&str; 7] = ["t", "a", "c", "q", "sw", "tc", "ov"];

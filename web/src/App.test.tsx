@@ -22,7 +22,7 @@ test("opens the page's link and draws it", () => {
   const href = 'https://x.test/#v=2&b=4/4:4';
   const core: Core = {
     openLink: vi.fn(() => ({ lanes: [], issues: [{ level: 'error' as const, msg: 'x; replaced with 4/4 in 16ths' }] })),
-    view: vi.fn(() => ({ bars: [fourFour], lanes: [] })),
+    view: vi.fn(() => ({ title: '', tempo: 80, bars: [fourFour], lanes: [] })),
   };
 
   const { container } = render(<App core={core} href={href} />);
@@ -37,7 +37,7 @@ test('passes the opened lanes to view', () => {
   const href = 'https://x.test/#v=2&b=4/4:4';
   const core: Core = {
     openLink: vi.fn(() => ({ lanes: ['hh', 'sn'], issues: [] })),
-    view: vi.fn(() => ({ bars: [fourFour], lanes: [] })),
+    view: vi.fn(() => ({ title: '', tempo: 80, bars: [fourFour], lanes: [] })),
   };
 
   render(<App core={core} href={href} />);

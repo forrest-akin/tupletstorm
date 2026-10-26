@@ -20,6 +20,11 @@ pub enum Issue {
     NoGroove,
     /// The input is a Groove Scribe link, which is not imported.
     GrooveScribeNotImported,
+    /// The tempo is not a number from 10 to 999; 80 was used.
+    TempoOutOfRange {
+        /// The field's value, as the link has it.
+        raw: String,
+    },
     /// A bar could not be read and was replaced with 4/4 in 16ths.
     BarReplaced(ParseError),
     /// Bars past the 512th were dropped.
@@ -83,6 +88,9 @@ impl fmt::Display for Issue {
             Issue::NoGroove => f.write_str("no v=2 and no Groove Scribe fields; starting empty"),
             Issue::GrooveScribeNotImported => {
                 f.write_str("Groove Scribe link not imported; starting empty")
+            }
+            Issue::TempoOutOfRange { raw } => {
+                write!(f, "tempo '{raw}' out of range; using 80")
             }
             Issue::BarReplaced(e) => write!(f, "{e}; replaced with 4/4 in 16ths"),
             Issue::TooManyBars => {

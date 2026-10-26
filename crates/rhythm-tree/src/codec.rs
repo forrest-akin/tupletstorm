@@ -30,11 +30,18 @@ pub fn decode(input: &str) -> Decoded {
             Issue::NoGroove
         };
         return Decoded {
-            score: Score::new(vec![Bar::sixteenths()], BTreeMap::new()),
+            score: Score::new(
+                String::new(),
+                DEFAULT_TEMPO,
+                vec![Bar::sixteenths()],
+                BTreeMap::new(),
+            ),
             issues: vec![issue],
         };
     }
+    let title = safe_decode(value(&params, "t").unwrap_or_default()).into_owned();
     let mut issues = vec![];
+    let tempo = decode_tempo(value(&params, "q"), &mut issues);
     let bars = decode_bars(
         &safe_decode(value(&params, "b").unwrap_or("4/4:4")),
         &mut issues,
@@ -50,15 +57,36 @@ pub fn decode(input: &str) -> Decoded {
         }
     }
     Decoded {
-        score: Score::new(bars, hits),
+        score: Score::new(title, tempo, bars, hits),
         issues,
     }
 }
 
-/// What JavaScript's `trim`, as the reference uses, strips: Unicode White_Space but U+0085, and U+FEFF.
+/// What JavaScript's `trim` and `Number()`, as the reference uses them, strip: Unicode White_Space but U+0085, and U+FEFF.
 fn is_js_whitespace(c: char) -> bool {
     (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}'
 }
+
+/// Quarter notes per minute: a decimal number from 10 to 999, else 80.
+fn decode_tempo(raw: Option<&str>, issues: &mut Vec<Issue>) -> f64 {
+    let Some(raw) = raw else {
+        return DEFAULT_TEMPO;
+    };
+    match safe_decode(raw)
+        .trim_matches(is_js_whitespace)
+        .parse::<f64>()
+    {
+        Ok(q) if (10.0..=999.0).contains(&q) => q,
+        _ => {
+            issues.push(Issue::TempoOutOfRange {
+                raw: raw.to_string(),
+            });
+            DEFAULT_TEMPO
+        }
+    }
+}
+
+const DEFAULT_TEMPO: f64 = 80.0;
 
 /// One lane's `;`-separated bars of hits, one string per bar.
 fn decode_lane(key: &str, raw: &str, bars: &[Bar], issues: &mut Vec<Issue>) -> Vec<String> {
@@ -512,6 +540,40 @@ mod tests {
             ]
         );
         assert_eq!(decoded.score.lanes(), [] as [&str; 0]);
+    }
+
+    #[test]
+    fn reads_the_title() {
+        let decoded = decode("#v=2&t=A%20%26%20B");
+        assert_eq!(decoded.score.title(), "A & B");
+        assert_eq!(decoded.issues, []);
+    }
+
+    #[test]
+    fn reads_tempo() {
+        let decoded = decode("#v=2&q=92.5");
+        assert_eq!(decoded.score.tempo(), 92.5);
+        assert_eq!(decoded.issues, []);
+        let decoded = decode("#v=2");
+        assert_eq!(decoded.score.tempo(), 80.0);
+        assert_eq!(decoded.issues, []);
+        let decoded = decode("#v=2&q=%EF%BB%BF90");
+        assert_eq!(decoded.score.tempo(), 90.0);
+        assert_eq!(decoded.issues, []);
+    }
+
+    #[test]
+    fn reports_a_bad_tempo() {
+        for (q, msg) in [
+            ("abc", "tempo 'abc' out of range; using 80"),
+            ("5", "tempo '5' out of range; using 80"),
+            ("0x5A", "tempo '0x5A' out of range; using 80"),
+            ("%C2%8590", "tempo '%C2%8590' out of range; using 80"),
+        ] {
+            let decoded = decode(&format!("#v=2&q={q}"));
+            assert_eq!(decoded.score.tempo(), 80.0, "{q}");
+            assert_eq!(messages(&decoded), [msg], "{q}");
+        }
     }
 
     #[test]

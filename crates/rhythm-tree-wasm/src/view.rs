@@ -22,6 +22,10 @@ pub struct Opened {
 /// A groove as the client draws it.
 #[derive(Debug, Serialize)]
 pub struct GrooveView {
+    /// The title; empty when the link has none.
+    pub title: String,
+    /// Quarter notes per minute.
+    pub tempo: f64,
     pub bars: Vec<BarView>,
     /// The requested lanes, in the order asked for.
     pub lanes: Vec<LaneView>,
@@ -107,6 +111,8 @@ pub fn view_of(link: &str, lanes: &[&str]) -> GrooveView {
     // The link is canonical, so its issues were already listed when it was opened.
     let score = decode(link).score;
     GrooveView {
+        title: score.title().to_string(),
+        tempo: score.tempo(),
         bars: score.bars().iter().map(bar_view).collect(),
         lanes: lanes.iter().map(|id| lane_view(&score, id)).collect(),
     }
@@ -162,6 +168,12 @@ fn rat_view(r: Rat) -> RatView {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn views_the_title_and_tempo() {
+        let view = view_of("#v=2&t=A%20%26%20B&q=92.5", &[]);
+        assert_eq!((view.title.as_str(), view.tempo), ("A & B", 92.5));
+    }
 
     #[test]
     fn views_bars() {

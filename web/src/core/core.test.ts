@@ -42,3 +42,8 @@ test("opens every kit lane, then the link's custom lanes", () => {
   expect(sn.bars[0].hits).toBe('o---o---o---o---');
   expect(openLink('#v=2&b=4/4:4&zz9=x').lanes).toEqual([...KIT, 'zz9']);
 });
+
+test('reads the title and tempo', () => {
+  const { title, tempo } = view(cases[0].input, []);
+  expect({ title, tempo }).toEqual({ title: 'Bars 1–2', tempo: 96 });
+});

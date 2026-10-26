@@ -14,6 +14,10 @@ export function Groove({ view, issues }: { view: GrooveView; issues: Issue[] }) 
           ))}
         </ul>
       )}
+      <header className="heading">
+        {view.title && <h1>{view.title}</h1>}
+        <div className="tempo">♩ = {view.tempo}</div>
+      </header>
       <div className="groove">
         <div className="row">
           <div className="lane-name" />

@@ -29,6 +29,18 @@ main {
   color: var(--hit);
 }
 
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 0 0 16px;
+}
+
+.heading h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
 .groove {
   display: flex;
   flex-direction: column;
